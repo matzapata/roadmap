@@ -1,63 +1,51 @@
 # Roadmap tracker
 
-Static React Flow SPA for interactive roadmaps. All state lives in a single **bundle JSON** file — open, edit, save. IndexedDB keeps drafts across refresh. No backend required.
+Static React Flow SPA for interactive study roadmaps. A map is a single **bundle JSON** file — open, edit, save. IndexedDB keeps drafts across refresh. No backend.
+
+Live: [matzapata.github.io/roadmap](https://matzapata.github.io/roadmap/)
 
 ## Run
 
 ```bash
-# from repo root
-tools/roadmap/roadmap
-
-# or
-cd tools/roadmap && npm run dev
+npm install
+npm run dev
 ```
 
-First run installs npm deps. Open http://127.0.0.1:5173
+Open http://127.0.0.1:5173
 
-Production build (includes bundling knowledge maps into `public/maps/`):
+Production build:
 
 ```bash
-cd tools/roadmap && npm run build && npm run preview
+npm run build && npm run preview
 ```
 
-The legacy Python server ([`serve.py`](serve.py)) still exists for the old file-based workflow but is **not** used by the default launcher.
+Pushes to `main` deploy GitHub Pages (`base` is `/roadmap/` when `GITHUB_PAGES=true`).
 
-## Bundle format (`roadmap.bundle.json`)
+## Using it
+
+On first load the app opens the shipped **Untitled** example if you have no saved maps. **New** starts another copy of that example. Or **Open…** an existing `.json` bundle.
+
+- **☰ Menu** — New, Open, Save to file, Export JSON (no progress), Export PNG, Delete, Find & filter, roadmap switcher
+- **Title** — double-click to rename
+- **Topic panel** — click a topic; curriculum markdown + personal notes + status (`todo` / `learning` / `done`)
+- **Zoom** — bottom-left controls on the chart
+- IndexedDB autosave with toast feedback (`?map=<id>` in the URL)
+
+**Edit mode** (pen icon on the toolbar): drag, resize, connect, add topic/subtopic/label, undo (`⌘Z` / `Ctrl+Z`). The eye icon returns to view mode (pan, click topic). Select vs pan tools are on the same toolbar.
+
+**Flags:** set in the panel or via right-click. Filter under Find & filter.
+
+## Bundle format
 
 | Field | Role |
 |-------|------|
-| `lanes` | Topic tree (id + title, no file paths) |
+| `version` / `kind` | `1` / `"roadmap"` |
+| `id` / `title` | Map identity |
+| `lanes` | Topic tree (`id` + `title`) |
 | `nodes` / `edges` | React Flow chart layout |
 | `notes` | Topic id → markdown curriculum |
 | `progress` | Per-topic status, flags, personal notes |
 
 Export/import uses the same shape. Share by sending the `.json` file.
 
-## Regenerate bundles from knowledge (optional)
-
-Existing markdown under `knowledge/**/topics/` is **not** modified. The bundler only **adds** `roadmap.bundle.json` and copies into `public/maps/`:
-
-```bash
-cd tools/roadmap && npm run bundle
-```
-
-Sources: `roadmap.json` + `topics/*.md` + `progress.json` per map folder.
-
-## UI
-
-- **☰ Menu** — New, Open, Save, Export JSON (no progress), Export PNG, roadmap switcher, Find & filter, Layout mode
-- **Topic panel** — right side panel (no overlay); curriculum notes + personal progress
-- **Zoom** — bottom-left controls on the chart
-- IndexedDB autosave with toast feedback
-
-**Layout mode** (menu): drag, resize, connect, undo — default is study/view (pan, click topic).
-
-**Flags:** flag in panel or right-click on a box. Filter via Find & filter in menu.
-
-## Migrate old layouts
-
-If you still have `official.json` / `edits.json`:
-
-```bash
-node tools/roadmap/scripts/bake-roadmap.mjs
-```
+Shipped maps live in `public/maps/` (`index.json` plus matching bundle files). The app fetches that index on boot and copies a starter into IndexedDB the first time it is opened.

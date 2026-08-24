@@ -1,0 +1,408 @@
+{
+  "version": 1,
+  "kind": "roadmap",
+  "id": "untitled",
+  "title": "Untitled",
+  "description": "Example learning path — rename topics and grow it into your own map.",
+  "lanes": [
+    {
+      "id": "main",
+      "title": "Main",
+      "nodes": [
+        {
+          "id": "html",
+          "title": "First Topic (HTML)",
+          "children": [
+            {
+              "id": "html-basics",
+              "title": "Subtopic 1 (Learn the Basics)"
+            },
+            {
+              "id": "semantic-html",
+              "title": "Subtopic 2 (Semantic HTML)"
+            },
+            {
+              "id": "seo-basics",
+              "title": "Subtopic 3 (SEO Basics)"
+            },
+            {
+              "id": "html-best-practices",
+              "title": "Subtopic 4 (Best Practices)"
+            }
+          ]
+        },
+        {
+          "id": "css",
+          "title": "Second Topic (CSS)",
+          "children": [
+            {
+              "id": "css-basics",
+              "title": "Subtopic 1 (Learn the Basics)"
+            },
+            {
+              "id": "responsive-design",
+              "title": "Subtopic 2 (Responsive Design)"
+            }
+          ]
+        },
+        {
+          "id": "vcs",
+          "title": "Third Topic (Version Control Systems)"
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "spine",
+      "type": "vertical",
+      "position": {
+        "x": 530,
+        "y": 28
+      },
+      "width": 20,
+      "height": 72,
+      "data": {
+        "style": {
+          "stroke": "#2b78e4",
+          "strokeWidth": 3.5,
+          "strokeLinecap": "round",
+          "strokeDasharray": "0.8 8"
+        }
+      }
+    },
+    {
+      "id": "title",
+      "type": "title",
+      "position": {
+        "x": 360,
+        "y": 108
+      },
+      "width": 360,
+      "height": 52,
+      "data": {
+        "label": "Untitled",
+        "style": {
+          "fontSize": 28,
+          "textAlign": "center"
+        }
+      }
+    },
+    {
+      "id": "edit-html",
+      "type": "topic",
+      "position": {
+        "x": 414,
+        "y": 216
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "First Topic (HTML)",
+        "topicId": "html"
+      }
+    },
+    {
+      "id": "edit-html-basics",
+      "type": "subtopic",
+      "position": {
+        "x": 744,
+        "y": 216
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 1 (Learn the Basics)",
+        "topicId": "html-basics"
+      }
+    },
+    {
+      "id": "edit-semantic-html",
+      "type": "subtopic",
+      "position": {
+        "x": 744,
+        "y": 283
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 2 (Semantic HTML)",
+        "topicId": "semantic-html"
+      }
+    },
+    {
+      "id": "edit-seo-basics",
+      "type": "subtopic",
+      "position": {
+        "x": 744,
+        "y": 350
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 3 (SEO Basics)",
+        "topicId": "seo-basics"
+      }
+    },
+    {
+      "id": "edit-html-best-practices",
+      "type": "subtopic",
+      "position": {
+        "x": 744,
+        "y": 417
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 4 (Best Practices)",
+        "topicId": "html-best-practices"
+      }
+    },
+    {
+      "id": "edit-css",
+      "type": "topic",
+      "position": {
+        "x": 414,
+        "y": 361
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Second Topic (CSS)",
+        "topicId": "css"
+      }
+    },
+    {
+      "id": "edit-css-basics",
+      "type": "subtopic",
+      "position": {
+        "x": 84,
+        "y": 361
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 1 (Learn the Basics)",
+        "topicId": "css-basics"
+      }
+    },
+    {
+      "id": "edit-responsive-design",
+      "type": "subtopic",
+      "position": {
+        "x": 84,
+        "y": 428
+      },
+      "width": 252,
+      "height": 49,
+      "data": {
+        "label": "Subtopic 2 (Responsive Design)",
+        "topicId": "responsive-design"
+      }
+    },
+    {
+      "id": "edit-vcs",
+      "type": "topic",
+      "position": {
+        "x": 356.2053175167771,
+        "y": 583.6927702686436
+      },
+      "width": 372,
+      "height": 49,
+      "data": {
+        "label": "Third Topic (Version Control Systems)",
+        "topicId": "vcs"
+      }
+    },
+    {
+      "id": "continue",
+      "type": "label",
+      "position": {
+        "x": 437.2053175167771,
+        "y": 743.6927702686436
+      },
+      "width": 210,
+      "height": 28,
+      "data": {
+        "label": "Continue Learning",
+        "style": {
+          "color": "#000000",
+          "fontSize": 17
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-title-html",
+      "source": "title",
+      "target": "edit-html",
+      "sourceHandle": "x2",
+      "targetHandle": "w1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0"
+      },
+      "data": {
+        "edgeStyle": "solid"
+      }
+    },
+    {
+      "id": "e-html-basics",
+      "source": "edit-html",
+      "target": "edit-html-basics",
+      "sourceHandle": "z2",
+      "targetHandle": "y1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "e-html-semantic",
+      "source": "edit-html",
+      "target": "edit-semantic-html",
+      "sourceHandle": "z2",
+      "targetHandle": "y1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "e-html-seo",
+      "source": "edit-html",
+      "target": "edit-seo-basics",
+      "sourceHandle": "z2",
+      "targetHandle": "y1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "e-html-practices",
+      "source": "edit-html",
+      "target": "edit-html-best-practices",
+      "sourceHandle": "z2",
+      "targetHandle": "y1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "e-html-css",
+      "source": "edit-html",
+      "target": "edit-css",
+      "sourceHandle": "x2",
+      "targetHandle": "w1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0"
+      },
+      "data": {
+        "edgeStyle": "solid"
+      }
+    },
+    {
+      "id": "e-css-basics",
+      "source": "edit-css",
+      "target": "edit-css-basics",
+      "sourceHandle": "y2",
+      "targetHandle": "z1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "e-css-responsive",
+      "source": "edit-css",
+      "target": "edit-responsive-design",
+      "sourceHandle": "y2",
+      "targetHandle": "z1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5,
+        "strokeLinecap": "round",
+        "strokeDasharray": "0.8 8"
+      },
+      "data": {
+        "edgeStyle": "dashed"
+      }
+    },
+    {
+      "id": "edit-edit-vcs-continue-x2-w1",
+      "source": "edit-vcs",
+      "target": "continue",
+      "sourceHandle": "x2",
+      "targetHandle": "w1",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5
+      },
+      "data": {
+        "edgeStyle": "solid"
+      }
+    },
+    {
+      "id": "edit-edit-css-edit-vcs-x2-w2",
+      "source": "edit-css",
+      "target": "edit-vcs",
+      "sourceHandle": "x2",
+      "targetHandle": "w2",
+      "style": {
+        "stroke": "#2b78e4",
+        "strokeWidth": 3.5
+      },
+      "data": {
+        "edgeStyle": "solid"
+      }
+    }
+  ],
+  "notes": {
+    "html": "Start here. HTML is the structure of every page — headings, links, forms, and content.\n",
+    "html-basics": "Tags, attributes, and the document skeleton (`<!DOCTYPE html>`, `html`, `head`, `body`).\n",
+    "semantic-html": "Use elements that describe meaning: `header`, `nav`, `main`, `article`, `section`, `footer`.\n",
+    "seo-basics": "Titles, meta description, heading order, and alt text so pages can be found and understood.\n",
+    "html-best-practices": "Valid markup, accessibility, and a clear outline before you add styling or scripts.\n",
+    "css": "CSS paints the structure: layout, color, type, and how the page adapts to the screen.\n",
+    "css-basics": "Selectors, the box model, cascade, and common properties for color, space, and type.\n",
+    "responsive-design": "Flexible layouts, media queries, and mobile-first so the page works on any width.\n",
+    "vcs": "Version control records history so you can branch, review, and undo with confidence.\n"
+  },
+  "progress": {
+    "version": 1,
+    "nodes": {}
+  }
+}

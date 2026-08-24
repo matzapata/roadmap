@@ -130,7 +130,7 @@ function toFlowNodes(
       const flagHit = flagMatches(flag, flagFilter);
       dimmed = !(titleHit && statusHit && flagHit);
     } else if (!bound && filtering) {
-      if (n.type === "group" || n.type === "section" || n.type === "label" || n.type === "paragraph") {
+      if (n.type === "group" || n.type === "section" || n.type === "label" || n.type === "paragraph" || n.type === "title") {
         if (q) {
           const label = String(n.data?.label || "").toLowerCase();
           dimmed = !label.includes(q);

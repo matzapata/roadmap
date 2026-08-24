@@ -92,6 +92,7 @@ export type RoadmapListItem = {
   title: string;
   path?: string;
   topicCount?: number;
+  local?: boolean;
 };
 
 export type BoundTopic = {

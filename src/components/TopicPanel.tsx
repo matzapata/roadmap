@@ -37,11 +37,16 @@ export function TopicPanel({
   const personalNotes = entry?.notes || "";
   const flag = entry?.flag || null;
 
+  const topicId = topic?.id;
+
+  // Reset editor when switching topics only. Syncing on `noteMarkdown` would
+  // return to preview on every keystroke because saves update that prop.
   useEffect(() => {
-    if (!topic) return;
+    if (!topicId) return;
     setMode("preview");
     setMarkdown(noteMarkdown);
-  }, [topic, noteMarkdown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see above
+  }, [topicId]);
 
   useEffect(() => {
     if (mode !== "edit") return;

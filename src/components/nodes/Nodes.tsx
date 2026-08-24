@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import {
   Handle,
   NodeResizer,
@@ -141,7 +148,7 @@ function EditableLabel({
 
   return (
     <span
-      className={`${className || ""} nodrag`.trim()}
+      className={className || ""}
       onDoubleClick={(e: MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
@@ -238,8 +245,12 @@ export function SubtopicNode({ id, data, selected }: NodeProps) {
 
 export function TitleNode({ id, data, selected }: NodeProps) {
   const d = data as TopicData;
+  const fontSize = (d.style?.fontSize as number) || 28;
   return (
-    <div className={`rf-title ${selected ? "selected" : ""}`} style={{ width: "100%", height: "100%" }}>
+    <div
+      className={`rf-title ${d.dimmed ? "dimmed" : ""} ${selected ? "selected" : ""}`}
+      style={{ width: "100%", height: "100%", fontSize, textAlign: "center" }}
+    >
       <BoxResizer selected={selected} layoutMode={d.layoutMode} minWidth={80} minHeight={36} />
       <RoadmapHandles connectable={!!d.layoutMode} />
       <EditableLabel
@@ -260,7 +271,13 @@ export function LabelNode({ id, data, selected }: NodeProps) {
   return (
     <div
       className={`rf-step-label ${d.dimmed ? "dimmed" : ""} ${selected ? "selected" : ""}`}
-      style={{ color, fontSize, width: "100%", height: "100%", textAlign: "center" }}
+      style={{
+        color,
+        fontSize,
+        width: "100%",
+        height: "100%",
+        textAlign: (d.style?.textAlign as CSSProperties["textAlign"]) || "center",
+      }}
     >
       <BoxResizer selected={selected} layoutMode={d.layoutMode} minWidth={40} minHeight={20} />
       <RoadmapHandles connectable={!!d.layoutMode} />
@@ -336,7 +353,7 @@ export function ParagraphNode({ id, data, selected }: NodeProps) {
         background: transparent ? "transparent" : bg === "WHITe" || bg === "white" ? "#fff" : bg,
         borderColor: transparent ? "transparent" : border,
         fontSize: (d.style?.fontSize as number) || 17,
-        textAlign: "center",
+        textAlign: (d.style?.textAlign as CSSProperties["textAlign"]) || "center",
         justifyContent: "center",
       }}
     >

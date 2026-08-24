@@ -15,6 +15,7 @@ type Props = {
   onExportPng: () => void;
   onOpenSearch: () => void;
   onRenameTitle: (title: string) => void;
+  onDeleteMap: (id: string) => void;
 };
 
 export function AppMenu({
@@ -31,8 +32,10 @@ export function AppMenu({
   onExportPng,
   onOpenSearch,
   onRenameTitle,
+  onDeleteMap,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +57,10 @@ export function AppMenu({
     return () => window.cancelAnimationFrame(id);
   }, [editingTitle]);
 
-  const close = () => setOpen(false);
+  const close = () => {
+    setConfirmDelete(false);
+    setOpen(false);
+  };
   const act = (fn: () => void) => {
     fn();
     close();
@@ -94,7 +100,12 @@ export function AppMenu({
         className="btn menu-trigger"
         aria-label="Menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() =>
+          setOpen((v) => {
+            if (v) setConfirmDelete(false);
+            return !v;
+          })
+        }
       >
         ☰
       </button>
@@ -138,37 +149,60 @@ export function AppMenu({
         <>
           <div className="menu-backdrop" onClick={close} />
           <nav className="app-menu" aria-label="Main menu">
-            <p className="menu-section">File</p>
-            <button type="button" className="menu-item" onClick={() => act(onOpen)}>
-              Open…
-            </button>
-            <button type="button" className="menu-item" onClick={() => act(onSave)}>
-              Save to file{dirty ? " *" : ""}
-            </button>
-            <button type="button" className="menu-item" onClick={() => act(onExportJson)}>
-              Export JSON (no progress)
-            </button>
-            <button type="button" className="menu-item" onClick={() => act(onExportPng)}>
-              Export PNG
-            </button>
-            <button type="button" className="menu-item" onClick={() => act(onNew)}>
-              Reset Canvas
-            </button>
-            <p className="menu-section">Roadmaps</p>
-            {maps.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={`menu-item${m.id === mapId ? " active" : ""}`}
-                onClick={() => act(() => onMapChange(m.id))}
-              >
-                {m.title}
-              </button>
-            ))}
-            <p className="menu-section">View</p>
-            <button type="button" className="menu-item" onClick={() => act(onOpenSearch)}>
-              Find & filter…
-            </button>
+            {confirmDelete ? (
+              <div className="menu-confirm" role="alertdialog" aria-labelledby="menu-delete-title">
+                <p id="menu-delete-title" className="menu-confirm-copy">
+                  Delete “{title}”? This cannot be undone.
+                </p>
+                <button type="button" className="menu-item" onClick={() => setConfirmDelete(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="menu-item danger" onClick={() => act(() => onDeleteMap(mapId))}>
+                  Delete
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="menu-section">File</p>
+                <button type="button" className="menu-item" onClick={() => act(onNew)}>
+                  New
+                </button>
+                <button type="button" className="menu-item" onClick={() => act(onOpen)}>
+                  Open…
+                </button>
+                <button type="button" className="menu-item" onClick={() => act(onSave)}>
+                  Save to file{dirty ? " *" : ""}
+                </button>
+                <button type="button" className="menu-item" onClick={() => act(onExportJson)}>
+                  Export JSON (no progress)
+                </button>
+                <button type="button" className="menu-item" onClick={() => act(onExportPng)}>
+                  Export PNG
+                </button>
+                <button type="button" className="menu-item danger" onClick={() => setConfirmDelete(true)}>
+                  Delete
+                </button>
+                <p className="menu-section">View</p>
+                <button type="button" className="menu-item" onClick={() => act(onOpenSearch)}>
+                  Find & filter…
+                </button>
+                <p className="menu-section">Roadmaps</p>
+                {maps.length === 0 ? (
+                  <p className="menu-empty">No saved roadmaps</p>
+                ) : (
+                  maps.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`menu-item${m.id === mapId ? " active" : ""}`}
+                      onClick={() => act(() => onMapChange(m.id))}
+                    >
+                      {m.title}
+                    </button>
+                  ))
+                )}
+              </>
+            )}
           </nav>
         </>
       ) : null}

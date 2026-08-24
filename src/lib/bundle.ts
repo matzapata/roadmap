@@ -16,18 +16,138 @@ export function emptyProgress(): Progress {
   return { version: 1, nodes: {} };
 }
 
-export function emptyBundle(title = "New roadmap"): RoadmapBundle {
+const WIRE = "#2b78e4";
+const EDGE_SOLID = {
+  stroke: WIRE,
+  strokeWidth: 3.5,
+  strokeLinecap: "round",
+  strokeDasharray: "0",
+};
+const EDGE_DASHED = { ...EDGE_SOLID, strokeDasharray: "0.8 8" };
+
+/** Opening layout: heading, solid stem into a topic, dotted branch to a subtopic. */
+function starterChart(title: string): { nodes: ChartNode[]; edges: ChartEdge[] } {
+  const topicId = "introduction";
+  const subId = "topic";
+  const titleId = "title";
+  const topicNodeId = `edit-${topicId}`;
+  const subNodeId = `edit-${subId}`;
+  const spineId = "spine";
+
+  const titleW = 260;
+  const titleH = 52;
+  const boxW = 200;
+  const boxH = 49;
+  const spineW = 20;
+  const spineH = 76;
+  const cx = 240;
+  const titleY = 96;
+  const topicY = titleY + titleH + 52;
+  const titleX = cx - titleW / 2;
+  const topicX = cx - boxW / 2;
+  const subX = topicX + boxW + 64;
+
+  return {
+    nodes: [
+      {
+        id: spineId,
+        type: "vertical",
+        position: { x: cx - spineW / 2, y: titleY - spineH - 8 },
+        width: spineW,
+        height: spineH,
+        data: {
+          style: {
+            stroke: WIRE,
+            strokeWidth: 3.5,
+            strokeLinecap: "round",
+            strokeDasharray: "0.8 8",
+          },
+        },
+      },
+      {
+        id: titleId,
+        type: "title",
+        position: { x: titleX, y: titleY },
+        width: titleW,
+        height: titleH,
+        data: { label: title, style: { fontSize: 28, textAlign: "center" } },
+      },
+      {
+        id: topicNodeId,
+        type: "topic",
+        position: { x: topicX, y: topicY },
+        width: boxW,
+        height: boxH,
+        data: { label: "Introduction", topicId },
+      },
+      {
+        id: subNodeId,
+        type: "subtopic",
+        position: { x: subX, y: topicY },
+        width: boxW,
+        height: boxH,
+        data: { label: "Topic", topicId: subId },
+      },
+    ],
+    edges: [
+      {
+        id: "e-title-intro",
+        source: titleId,
+        target: topicNodeId,
+        sourceHandle: "x2",
+        targetHandle: "w1",
+        style: EDGE_SOLID,
+        data: { edgeStyle: "solid" },
+      },
+      {
+        id: "e-intro-topic",
+        source: topicNodeId,
+        target: subNodeId,
+        sourceHandle: "z2",
+        targetHandle: "y1",
+        style: EDGE_DASHED,
+        data: { edgeStyle: "dashed" },
+      },
+    ],
+  };
+}
+
+export function emptyBundle(title = "Untitled"): RoadmapBundle {
   const id = `map-${Date.now().toString(36)}`;
+  const { nodes, edges } = starterChart(title);
   return {
     version: BUNDLE_VERSION,
     kind: "roadmap",
     id,
     title,
     description: "",
-    lanes: [{ id: "main", title: "Main", nodes: [] }],
-    nodes: [],
-    edges: [],
-    notes: {},
+    lanes: [
+      {
+        id: "main",
+        title: "Main",
+        nodes: [
+          {
+            id: "introduction",
+            title: "Introduction",
+            children: [{ id: "topic", title: "Topic" }],
+          },
+        ],
+      },
+    ],
+    nodes,
+    edges,
+    notes: { introduction: "", topic: "" },
+    progress: emptyProgress(),
+  };
+}
+
+/** Fresh copy of a shipped map: new id, empty progress, same chart. */
+export function forkBundle(bundle: RoadmapBundle, title = bundle.title): RoadmapBundle {
+  const copy = structuredClone(bundle);
+  return {
+    ...copy,
+    id: `map-${Date.now().toString(36)}`,
+    title,
     progress: emptyProgress(),
   };
 }

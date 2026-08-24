@@ -12,14 +12,15 @@ import {
   deleteTopicFromBundle,
   downloadBundle,
   emptyBundle,
+  forkBundle,
   patchProgressEntry,
   renameTopicInBundle,
   validateBundle,
 } from "./lib/bundle";
 import { exportChartPng } from "./lib/export";
 import { buildFlow, chartFromGraph } from "./lib/merge";
-import { idbGetBundle, idbListBundles, idbPutBundle } from "./lib/idb";
-import { fetchStarterBundle, fetchStarterIndex } from "./lib/starters";
+import { idbDeleteBundle, idbGetBundle, idbListBundles, idbPutBundle } from "./lib/idb";
+import { fetchStarterBundle, fetchStarterIndex, fetchStarterTemplate } from "./lib/starters";
 import type {
   BoundTopic,
   ChartSnapshot,
@@ -72,7 +73,6 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [flagFilter, setFlagFilter] = useState<FlagFilter>("");
   const [toast, setToast] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [idbPending, setIdbPending] = useState(false);
   const [booting, setBooting] = useState(true);
@@ -100,7 +100,12 @@ export default function App() {
     const byId = new Map<string, RoadmapListItem>();
     for (const s of starters) byId.set(s.id, s);
     for (const b of idbMaps) {
-      byId.set(b.id, { id: b.id, title: b.title, topicCount: collectTopicIds(b.lanes).size });
+      byId.set(b.id, {
+        id: b.id,
+        title: b.title,
+        topicCount: collectTopicIds(b.lanes).size,
+        local: true,
+      });
     }
     const list = [...byId.values()].sort((a, b) => a.title.localeCompare(b.title));
     setMaps(list);
@@ -116,12 +121,13 @@ export default function App() {
         await idbPutBundle(next);
         showToast("Saved locally");
         setIdbPending(false);
+        void refreshMapList();
       } catch {
         showToast("Local save failed");
         setIdbPending(false);
       }
     }, 1200);
-  }, [showToast]);
+  }, [showToast, refreshMapList]);
 
   const applyBundle = useCallback(
     (next: RoadmapBundle, opts?: { markClean?: boolean }) => {
@@ -162,9 +168,27 @@ export default function App() {
     [scheduleIdbSave, refreshMapList],
   );
 
+  const startBlank = useCallback(
+    async (opts?: { persist?: boolean }) => {
+      const template = await fetchStarterTemplate();
+      const next = template ? forkBundle(template, "Untitled") : emptyBundle("Untitled");
+      if (opts?.persist !== false) {
+        try {
+          await idbPutBundle(next);
+          await refreshMapList();
+        } catch {
+          /* canvas still works without IndexedDB */
+        }
+      }
+      applyBundle(next, { markClean: true });
+      setMapId(next.id);
+      setMapIdInUrl(next.id);
+    },
+    [applyBundle, refreshMapList],
+  );
+
   const loadMap = useCallback(
     async (id: string) => {
-      setError(null);
       setSelected(null);
       setLayoutMode(false);
       const fromIdb = await idbGetBundle(id);
@@ -195,28 +219,26 @@ export default function App() {
     (async () => {
       try {
         const list = await refreshMapList();
+        if (cancelled) return;
         const fromUrl = mapIdFromUrl();
-        let initial = fromUrl && list.find((m) => m.id === fromUrl)?.id;
-        if (!initial && list.length) initial = list[0].id;
+        const initial = fromUrl && list.find((m) => m.id === fromUrl)?.id;
         if (!initial) {
-          const starters = await fetchStarterIndex();
-          if (starters.length) {
-            const fetched = await fetchStarterBundle(starters[0].path!);
-            await idbPutBundle(fetched);
-            initial = fetched.id;
-            await refreshMapList();
-          }
-        }
-        if (!initial) {
-          if (!cancelled) {
-            setBooting(false);
-            setError(null);
+          const hasLocal = list.some((m) => m.local);
+          const starter = list.find((m) => !m.local);
+          if (!hasLocal && starter) {
+            if (!cancelled) await loadMap(starter.id);
+          } else if (!cancelled) {
+            await startBlank({ persist: false });
           }
           return;
         }
-        if (!cancelled) await loadMap(initial);
-      } catch (e) {
-        if (!cancelled) setError(String(e));
+        try {
+          if (!cancelled) await loadMap(initial);
+        } catch {
+          if (!cancelled) await startBlank({ persist: false });
+        }
+      } catch {
+        if (!cancelled) await startBlank({ persist: false });
       } finally {
         if (!cancelled) setBooting(false);
       }
@@ -224,7 +246,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [loadMap, refreshMapList]);
+  }, [loadMap, refreshMapList, startBlank]);
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -435,24 +457,44 @@ export default function App() {
     (topicId: string, markdown: string) => {
       const b = bundleRef.current;
       if (!b) return;
-      applyBundle({ ...b, notes: { ...b.notes, [topicId]: markdown } });
+      const next = { ...b, notes: { ...b.notes, [topicId]: markdown } };
+      bundleRef.current = next;
+      setBundle(next);
+      setDirty(true);
+      scheduleIdbSave(next);
     },
-    [applyBundle],
+    [scheduleIdbSave],
   );
 
   const onMapChange = (nextId: string) => {
-    void loadMap(nextId).catch((e) => setError(String(e)));
+    if (nextId === mapId) return;
+    void loadMap(nextId).catch((e) => showToast(`Open failed: ${e}`));
   };
 
   const onNew = () => {
-    const next = emptyBundle();
-    void idbPutBundle(next).then(async () => {
-      await refreshMapList();
-      applyBundle(next, { markClean: true });
-      setMapId(next.id);
-      setMapIdInUrl(next.id);
-      showToast("New roadmap");
-    });
+    void startBlank().then(() => showToast("New roadmap"));
+  };
+
+  const onDeleteMap = (id: string) => {
+    void (async () => {
+      const deletingCurrent = id === mapId || bundleRef.current?.id === id;
+      if (deletingCurrent) {
+        if (idbTimer.current) window.clearTimeout(idbTimer.current);
+        if (chartTimer.current) window.clearTimeout(chartTimer.current);
+        setIdbPending(false);
+      }
+      try {
+        await idbDeleteBundle(id);
+        const list = await refreshMapList();
+        showToast("Roadmap deleted");
+        if (!deletingCurrent) return;
+        const next = list.find((m) => m.id !== id);
+        if (next) await loadMap(next.id);
+        else await startBlank({ persist: false });
+      } catch (err) {
+        showToast(`Delete failed: ${err}`);
+      }
+    })();
   };
 
   const onOpen = () => fileInputRef.current?.click();
@@ -534,48 +576,20 @@ export default function App() {
     };
   }, [bundle, progress]);
 
-  if (booting) {
-    return <div className="loading">Loading roadmap…</div>;
-  }
+  const displayMaps = useMemo(() => {
+    if (!bundle) return maps;
+    const byId = new Map(maps.map((m) => [m.id, m]));
+    const existing = byId.get(bundle.id);
+    byId.set(bundle.id, {
+      id: bundle.id,
+      title: bundle.title,
+      topicCount: existing?.topicCount ?? collectTopicIds(bundle.lanes).size,
+      local: existing?.local ?? true,
+    });
+    return [...byId.values()].sort((a, b) => a.title.localeCompare(b.title));
+  }, [maps, bundle]);
 
-  if (!bundle && !error) {
-    return (
-      <div className="error-banner">
-        <h1>Roadmap tracker</h1>
-        <p>No roadmap loaded.</p>
-        <div className="empty-actions">
-          <button type="button" className="btn" onClick={onNew}>New roadmap</button>
-          <button type="button" className="btn" onClick={onOpen}>Open JSON</button>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          className="hidden-file-input"
-          onChange={onFileSelected}
-        />
-      </div>
-    );
-  }
-
-  if (error && !bundle) {
-    return (
-      <div className="error-banner">
-        <h1>Roadmap tracker</h1>
-        <p>{error}</p>
-        <button type="button" className="btn" onClick={onOpen}>Open JSON</button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          className="hidden-file-input"
-          onChange={onFileSelected}
-        />
-      </div>
-    );
-  }
-
-  if (!bundle || !flow || !mapId) {
+  if (booting || !bundle || !flow || !mapId) {
     return <div className="loading">Loading roadmap…</div>;
   }
 
@@ -595,7 +609,7 @@ export default function App() {
           <AppMenu
             title={bundle.title}
             progressLabel={progressLabel}
-            maps={maps}
+            maps={displayMaps}
             mapId={mapId}
             dirty={dirty}
             onMapChange={onMapChange}
@@ -606,6 +620,7 @@ export default function App() {
             onExportPng={onExportPng}
             onOpenSearch={() => setSearchOpen(true)}
             onRenameTitle={onRenameTitle}
+            onDeleteMap={onDeleteMap}
           />
           <ModeToolbar
             layoutMode={layoutMode}
