@@ -1,6 +1,6 @@
-# Roadmap tracker
+# Roadmap
 
-Static React Flow SPA for interactive study roadmaps. A map is a single **bundle JSON** file — open, edit, save. IndexedDB keeps drafts across refresh. No backend.
+Standalone editor for interactive roadmaps. A map is a single **bundle JSON** file — open, edit, save. IndexedDB keeps drafts across refresh. No backend.
 
 Live: [matzapata.github.io/roadmap](https://matzapata.github.io/roadmap/)
 
@@ -23,11 +23,11 @@ Pushes to `main` deploy GitHub Pages (`base` is `/roadmap/` when `GITHUB_PAGES=t
 
 ## Using it
 
-On first load the app opens the shipped **Untitled** example if you have no saved maps. **New** starts another copy of that example. Or **Open…** an existing `.json` bundle.
+On first load the app opens a copy of the **Untitled** example. **New** starts another copy of that example. Or **Open…** an existing `.json` bundle.
 
 - **☰ Menu** — New, Open, Save to file, Export JSON (no progress), Export PNG, Delete, Find & filter, roadmap switcher
 - **Title** — double-click to rename
-- **Topic panel** — click a topic; curriculum markdown + personal notes + status (`todo` / `learning` / `done`)
+- **Topic panel** — click a topic; markdown notes + personal notes + status (`todo` / `learning` / `done`)
 - **Zoom** — bottom-left controls on the chart
 - IndexedDB autosave with toast feedback (`?map=<id>` in the URL)
 
@@ -43,9 +43,11 @@ On first load the app opens the shipped **Untitled** example if you have no save
 | `id` / `title` | Map identity |
 | `lanes` | Topic tree (`id` + `title`) |
 | `nodes` / `edges` | React Flow chart layout |
-| `notes` | Topic id → markdown curriculum |
+| `notes` | Topic id → markdown |
 | `progress` | Per-topic status, flags, personal notes |
 
 Export/import uses the same shape. Share by sending the `.json` file.
 
-Shipped maps live in `public/maps/` (`index.json` plus matching bundle files). The app fetches that index on boot and copies a starter into IndexedDB the first time it is opened.
+JSON Schema (editor autocomplete and validation): [`public/schemas/roadmap-bundle.schema.json`](public/schemas/roadmap-bundle.schema.json). The example map points at it via `$schema`. Runtime loading still goes through `validateBundle` and ignores `$schema`.
+
+The example template lives at `public/maps/untitled.json`. **New** copies it into IndexedDB with a fresh id.

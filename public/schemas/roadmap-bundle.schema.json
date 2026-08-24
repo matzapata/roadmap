@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://matzapata.github.io/roadmap/schemas/roadmap-bundle.schema.json",
+  "title": "RoadmapBundle",
+  "description": "A single roadmap: topic tree, React Flow chart, notes, and progress.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "kind", "id", "title", "lanes", "nodes", "edges", "notes", "progress"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Pointer to this schema (editor-only; ignored at runtime)."
+    },
+    "version": {
+      "const": 1,
+      "description": "Bundle format version."
+    },
+    "kind": {
+      "const": "roadmap"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable map id (used in ?map= and IndexedDB)."
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "lanes": {
+      "type": "array",
+      "description": "Topic tree grouped into lanes.",
+      "items": { "$ref": "#/$defs/Lane" }
+    },
+    "nodes": {
+      "type": "array",
+      "description": "React Flow chart nodes (layout).",
+      "items": { "$ref": "#/$defs/ChartNode" }
+    },
+    "edges": {
+      "type": "array",
+      "description": "React Flow chart edges.",
+      "items": { "$ref": "#/$defs/ChartEdge" }
+    },
+    "notes": {
+      "type": "object",
+      "description": "Topic id → markdown notes.",
+      "additionalProperties": { "type": "string" }
+    },
+    "progress": {
+      "$ref": "#/$defs/Progress"
+    }
+  },
+  "$defs": {
+    "Status": {
+      "type": "string",
+      "enum": ["todo", "learning", "done"]
+    },
+    "FlagColor": {
+      "type": "string",
+      "enum": ["red", "orange", "green", "blue", "purple"]
+    },
+    "NodeType": {
+      "type": "string",
+      "enum": [
+        "topic",
+        "subtopic",
+        "title",
+        "label",
+        "paragraph",
+        "checklist",
+        "section",
+        "vertical",
+        "horizontal",
+        "group"
+      ]
+    },
+    "HandleId": {
+      "type": ["string", "null"],
+      "description": "w=top, x=bottom, y=left, z=right; 1=target, 2=source (e.g. x2, w1)."
+    },
+    "Style": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "stroke": { "type": "string" },
+        "strokeWidth": { "type": "number" },
+        "strokeLinecap": { "type": "string" },
+        "strokeDasharray": { "type": ["string", "number"] },
+        "fontSize": { "type": "number" },
+        "textAlign": { "type": "string" },
+        "color": { "type": "string" },
+        "backgroundColor": { "type": "string" },
+        "borderColor": { "type": "string" }
+      }
+    },
+    "TopicNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "file": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TopicNode" }
+        }
+      }
+    },
+    "Lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "nodes"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TopicNode" }
+        }
+      }
+    },
+    "ChartNodeData": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "label": { "type": "string" },
+        "topicId": {
+          "type": "string",
+          "description": "Binds this chart node to a topic in lanes."
+        },
+        "style": { "$ref": "#/$defs/Style" },
+        "checklists": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        },
+        "href": { "type": "string" },
+        "colorType": { "type": "string" }
+      }
+    },
+    "ChartNode": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "type", "position"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/$defs/NodeType" },
+        "position": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "measured": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "number" },
+            "height": { "type": "number" }
+          }
+        },
+        "parentId": { "type": "string" },
+        "style": { "$ref": "#/$defs/Style" },
+        "data": { "$ref": "#/$defs/ChartNodeData" }
+      }
+    },
+    "ChartEdge": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "source", "target"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "sourceHandle": { "$ref": "#/$defs/HandleId" },
+        "targetHandle": { "$ref": "#/$defs/HandleId" },
+        "type": { "type": "string" },
+        "style": { "$ref": "#/$defs/Style" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "edgeStyle": {
+              "type": "string",
+              "enum": ["solid", "dashed"]
+            }
+          }
+        }
+      }
+    },
+    "ProgressEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "notes"],
+      "properties": {
+        "status": { "$ref": "#/$defs/Status" },
+        "notes": { "type": "string", "description": "Personal notes." },
+        "flag": {
+          "anyOf": [{ "$ref": "#/$defs/FlagColor" }, { "type": "null" }]
+        },
+        "updatedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "Progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "nodes"],
+      "properties": {
+        "version": { "type": "number" },
+        "nodes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/ProgressEntry" }
+        }
+      }
+    }
+  }
+}

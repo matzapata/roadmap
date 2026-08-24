@@ -139,7 +139,7 @@ export function TopicPanel({
         className="panel-notes"
         rows={5}
         wrap="soft"
-        placeholder="Interview talking points, gaps, links…"
+        placeholder="Notes, links, next steps…"
         value={personalNotes}
         onChange={(e) => onNotes(topic.id, e.target.value)}
       />

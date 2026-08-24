@@ -142,7 +142,7 @@ export function AppMenu({
           {title}
         </button>
       )}
-      <span className="progress-pill" title="Study progress">
+      <span className="progress-pill" title="Progress">
         {progressLabel}
       </span>
       {open ? (

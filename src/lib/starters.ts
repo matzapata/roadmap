@@ -1,4 +1,4 @@
-import type { RoadmapListItem } from "./types";
+import type { RoadmapBundle } from "./types";
 import { validateBundle } from "./bundle";
 
 function withBase(path: string): string {
@@ -20,41 +20,12 @@ async function fetchJson(path: string): Promise<unknown | null> {
   }
 }
 
-export async function fetchStarterIndex(): Promise<RoadmapListItem[]> {
-  const data = await fetchJson("maps/index.json");
-  if (!Array.isArray(data)) return [];
-  return data
-    .map((raw) => {
-      const item = raw as {
-        id?: unknown;
-        title?: unknown;
-        path?: unknown;
-        topicCount?: unknown;
-      };
-      const id = String(item.id ?? "");
-      return {
-        id,
-        title: String(item.title || id),
-        path: withBase(String(item.path || `maps/${id}.json`)),
-        topicCount: typeof item.topicCount === "number" ? item.topicCount : 0,
-      };
-    })
-    .filter((item) => item.id);
-}
-
-export async function fetchStarterBundle(path: string): Promise<import("./types").RoadmapBundle> {
-  const data = await fetchJson(path);
-  if (data == null) throw new Error(`Failed to load ${path}`);
-  return validateBundle(data);
-}
-
-/** First shipped map, preferring `untitled`. */
-export async function fetchStarterTemplate(): Promise<import("./types").RoadmapBundle | null> {
-  const index = await fetchStarterIndex();
-  const starter = index.find((s) => s.id === "untitled") ?? index[0];
-  if (!starter?.path) return null;
+/** Example map used as the template for New. */
+export async function fetchStarterTemplate(): Promise<RoadmapBundle | null> {
+  const data = await fetchJson("maps/untitled.json");
+  if (data == null) return null;
   try {
-    return await fetchStarterBundle(starter.path);
+    return validateBundle(data);
   } catch {
     return null;
   }

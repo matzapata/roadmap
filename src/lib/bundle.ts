@@ -141,7 +141,7 @@ export function emptyBundle(title = "Untitled"): RoadmapBundle {
   };
 }
 
-/** Fresh copy of a shipped map: new id, empty progress, same chart. */
+/** Fresh copy of a template: new id, empty progress, same chart. */
 export function forkBundle(bundle: RoadmapBundle, title = bundle.title): RoadmapBundle {
   const copy = structuredClone(bundle);
   return {

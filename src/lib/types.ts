@@ -90,9 +90,7 @@ export type RoadmapBundle = {
 export type RoadmapListItem = {
   id: string;
   title: string;
-  path?: string;
   topicCount?: number;
-  local?: boolean;
 };
 
 export type BoundTopic = {

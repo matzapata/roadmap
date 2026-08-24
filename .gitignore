@@ -18,7 +18,8 @@ npm-debug.log*
 # Editor / OS
 .DS_Store
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj

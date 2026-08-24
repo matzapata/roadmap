@@ -20,7 +20,7 @@ import {
 import { exportChartPng } from "./lib/export";
 import { buildFlow, chartFromGraph } from "./lib/merge";
 import { idbDeleteBundle, idbGetBundle, idbListBundles, idbPutBundle } from "./lib/idb";
-import { fetchStarterBundle, fetchStarterIndex, fetchStarterTemplate } from "./lib/starters";
+import { fetchStarterTemplate } from "./lib/starters";
 import type {
   BoundTopic,
   ChartSnapshot,
@@ -96,18 +96,13 @@ export default function App() {
 
   const refreshMapList = useCallback(async () => {
     const idbMaps = await idbListBundles();
-    const starters = await fetchStarterIndex();
-    const byId = new Map<string, RoadmapListItem>();
-    for (const s of starters) byId.set(s.id, s);
-    for (const b of idbMaps) {
-      byId.set(b.id, {
+    const list = idbMaps
+      .map((b) => ({
         id: b.id,
         title: b.title,
         topicCount: collectTopicIds(b.lanes).size,
-        local: true,
-      });
-    }
-    const list = [...byId.values()].sort((a, b) => a.title.localeCompare(b.title));
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
     setMaps(list);
     return list;
   }, []);
@@ -192,26 +187,12 @@ export default function App() {
       setSelected(null);
       setLayoutMode(false);
       const fromIdb = await idbGetBundle(id);
-      if (fromIdb) {
-        applyBundle(fromIdb, { markClean: true });
-        setMapId(id);
-        setMapIdInUrl(id);
-        return;
-      }
-      const starters = await fetchStarterIndex();
-      const starter = starters.find((s) => s.id === id);
-      if (starter?.path) {
-        const fetched = await fetchStarterBundle(starter.path);
-        await idbPutBundle(fetched);
-        applyBundle(fetched, { markClean: true });
-        setMapId(id);
-        setMapIdInUrl(id);
-        await refreshMapList();
-        return;
-      }
-      throw new Error(`Unknown map: ${id}`);
+      if (!fromIdb) throw new Error(`Unknown map: ${id}`);
+      applyBundle(fromIdb, { markClean: true });
+      setMapId(id);
+      setMapIdInUrl(id);
     },
-    [applyBundle, refreshMapList],
+    [applyBundle],
   );
 
   useEffect(() => {
@@ -223,13 +204,7 @@ export default function App() {
         const fromUrl = mapIdFromUrl();
         const initial = fromUrl && list.find((m) => m.id === fromUrl)?.id;
         if (!initial) {
-          const hasLocal = list.some((m) => m.local);
-          const starter = list.find((m) => !m.local);
-          if (!hasLocal && starter) {
-            if (!cancelled) await loadMap(starter.id);
-          } else if (!cancelled) {
-            await startBlank({ persist: false });
-          }
+          if (!cancelled) await startBlank({ persist: false });
           return;
         }
         try {
@@ -584,7 +559,6 @@ export default function App() {
       id: bundle.id,
       title: bundle.title,
       topicCount: existing?.topicCount ?? collectTopicIds(bundle.lanes).size,
-      local: existing?.local ?? true,
     });
     return [...byId.values()].sort((a, b) => a.title.localeCompare(b.title));
   }, [maps, bundle]);

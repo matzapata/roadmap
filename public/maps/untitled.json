@@ -1,9 +1,10 @@
 {
+  "$schema": "../schemas/roadmap-bundle.schema.json",
   "version": 1,
   "kind": "roadmap",
   "id": "untitled",
   "title": "Untitled",
-  "description": "Example learning path — rename topics and grow it into your own map.",
+  "description": "Example map — rename topics and grow it into your own roadmap.",
   "lanes": [
     {
       "id": "main",

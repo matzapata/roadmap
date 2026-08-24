@@ -1,0 +1,8 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["public/maps/*.json"],
+      "url": "./public/schemas/roadmap-bundle.schema.json"
+    }
+  ]
+}
