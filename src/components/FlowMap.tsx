@@ -243,6 +243,9 @@ function toFlowEdges(merged: MergedFlow, layoutMode: boolean): Edge[] {
       animated: false,
       selectable: layoutMode,
       deletable: layoutMode,
+      // Keep arrows behind boxes. xyflow otherwise copies the connected
+      // node z-index, so an edge can paint over an unrelated overlapping box.
+      zIndex: 0,
       style: {
         stroke,
         strokeWidth: width,
@@ -903,7 +906,9 @@ function FlowMapInner({
         selectionOnDrag={layoutMode && !panTool}
         panOnDrag={panTool ? true : [1, 2]}
         connectionMode={ConnectionMode.Loose}
-        defaultEdgeOptions={{ style: EDGE_STYLE }}
+        defaultEdgeOptions={{ style: EDGE_STYLE, zIndex: 0 }}
+        elevateEdgesOnSelect={false}
+        zIndexMode="manual"
         connectionLineStyle={EDGE_STYLE}
         panOnScroll
         zoomOnScroll

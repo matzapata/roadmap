@@ -67,7 +67,7 @@ export function FlagSelect({ value, onChange, className, id, disabled, variant =
   return (
     <span
       className={`flag-wrap ${value ? "has-flag" : ""} ${className || ""}`.trim()}
-      style={color ? { color } : undefined}
+      style={color ? { background: color } : undefined}
     >
       <FlagIcon filled={!!value} />
       {select}
