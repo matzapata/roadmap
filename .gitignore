@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Generated starter maps — not preloaded
+public/maps/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Env / local
+*.local
+.env
+.env.*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
