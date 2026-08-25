@@ -13,7 +13,6 @@ type Props = {
   onSave: () => void;
   onExportJson: () => void;
   onExportPng: () => void;
-  onOpenSearch: () => void;
   onRenameTitle: (title: string) => void;
   onDeleteMap: (id: string) => void;
 };
@@ -30,7 +29,6 @@ export function AppMenu({
   onSave,
   onExportJson,
   onExportPng,
-  onOpenSearch,
   onRenameTitle,
   onDeleteMap,
 }: Props) {
@@ -181,10 +179,6 @@ export function AppMenu({
                 </button>
                 <button type="button" className="menu-item danger" onClick={() => setConfirmDelete(true)}>
                   Delete
-                </button>
-                <p className="menu-section">View</p>
-                <button type="button" className="menu-item" onClick={() => act(onOpenSearch)}>
-                  Find & filter…
                 </button>
                 <p className="menu-section">Roadmaps</p>
                 {maps.length === 0 ? (

@@ -97,6 +97,38 @@ function nodeBox(n: Node) {
   return { id: n.id, x: n.position.x, y: n.position.y, w, h, parentId: n.parentId };
 }
 
+function isFiltering(search: string, filter: string, flagFilter: FlagFilter) {
+  return !!(search.trim() || filter !== "all" || flagFilter);
+}
+
+function nodeDimmed(
+  n: { type?: string | null; data?: { label?: unknown } },
+  bound: BoundTopic | null,
+  status: Status | undefined,
+  flag: FlagColor | null,
+  search: string,
+  filter: string,
+  flagFilter: FlagFilter,
+): boolean {
+  if (!isFiltering(search, filter, flagFilter)) return false;
+  const q = search.trim().toLowerCase();
+  const label = String(n.data?.label || "").toLowerCase();
+
+  if (bound) {
+    const titleHit = !q || bound.title.toLowerCase().includes(q) || label.includes(q);
+    const statusHit = filter === "all" || status === filter;
+    const flagHit = flagMatches(flag, flagFilter);
+    return !(titleHit && statusHit && flagHit);
+  }
+
+  if (n.type === "vertical" || n.type === "horizontal") return true;
+  if (n.type === "group" || n.type === "section" || n.type === "label" || n.type === "paragraph" || n.type === "title") {
+    return q ? !label.includes(q) : true;
+  }
+  if (q) return !label.includes(q);
+  return Boolean(flagFilter);
+}
+
 function toFlowNodes(
   merged: MergedFlow,
   progress: Progress,
@@ -111,7 +143,6 @@ function toFlowNodes(
   renameNonces: Record<string, number>,
 ): Node[] {
   const byOurId = new Map(flattenTopics(lanes).map((n) => [n.id, n]));
-  const q = search.trim().toLowerCase();
 
   return merged.nodes.map((n) => {
     const w = n.width ?? n.measured?.width ?? (n.type === "group" ? 240 : 160);
@@ -120,30 +151,7 @@ function toFlowNodes(
     const ours = bound ? byOurId.get(bound.id) : null;
     const status = ours ? derivedStatus(ours, progress) : undefined;
     const flag = bound ? progress.nodes[bound.id]?.flag || null : null;
-
-    let dimmed = false;
-    const filtering = !!(q || filter !== "all" || flagFilter);
-    if (bound && filtering) {
-      const titleHit =
-        !q || bound.title.toLowerCase().includes(q) || n.data?.label?.toLowerCase().includes(q);
-      const statusHit = filter === "all" || status === filter;
-      const flagHit = flagMatches(flag, flagFilter);
-      dimmed = !(titleHit && statusHit && flagHit);
-    } else if (!bound && filtering) {
-      if (n.type === "group" || n.type === "section" || n.type === "label" || n.type === "paragraph" || n.type === "title") {
-        if (q) {
-          const label = String(n.data?.label || "").toLowerCase();
-          dimmed = !label.includes(q);
-        } else {
-          dimmed = true;
-        }
-      } else if (q) {
-        const label = String(n.data?.label || "").toLowerCase();
-        dimmed = !label.includes(q);
-      } else if (flagFilter) {
-        dimmed = true;
-      }
-    }
+    const dimmed = nodeDimmed(n, bound, status, flag, search, filter, flagFilter);
 
     const dataStyle = (n.data?.style && typeof n.data.style === "object" ? n.data.style : {}) as Record<
       string,
@@ -215,7 +223,31 @@ function pinGroupLabels(
   });
 }
 
-function toFlowEdges(merged: MergedFlow, layoutMode: boolean): Edge[] {
+function dimmedNodeIds(
+  merged: MergedFlow,
+  progress: Progress,
+  lanes: Lane[],
+  search: string,
+  filter: string,
+  flagFilter: FlagFilter,
+): Set<string> {
+  const byOurId = new Map(flattenTopics(lanes).map((n) => [n.id, n]));
+  const ids = new Set<string>();
+  for (const n of merged.nodes) {
+    const bound = merged.binding.get(n.id) || null;
+    const ours = bound ? byOurId.get(bound.id) : null;
+    const status = ours ? derivedStatus(ours, progress) : undefined;
+    const flag = bound ? progress.nodes[bound.id]?.flag || null : null;
+    if (nodeDimmed(n, bound, status, flag, search, filter, flagFilter)) ids.add(n.id);
+  }
+  return ids;
+}
+
+function toFlowEdges(
+  merged: MergedFlow,
+  layoutMode: boolean,
+  dimmedIds: Set<string>,
+): Edge[] {
   const typeById = new Map(merged.nodes.map((n) => [n.id, n.type]));
   return merged.edges.map((e) => {
     const style = e.style || {};
@@ -233,6 +265,7 @@ function toFlowEdges(merged: MergedFlow, layoutMode: boolean): Edge[] {
       dash = stored && String(stored) !== "0" ? String(stored) : undefined;
     }
     const stroke = (style.stroke as string) || EDGE_STYLE.stroke;
+    const dimmed = dimmedIds.has(e.source) || dimmedIds.has(e.target);
     return {
       id: e.id,
       source: e.source,
@@ -243,6 +276,7 @@ function toFlowEdges(merged: MergedFlow, layoutMode: boolean): Edge[] {
       animated: false,
       selectable: layoutMode,
       deletable: layoutMode,
+      className: dimmed ? "dimmed" : undefined,
       // Keep arrows behind boxes. xyflow otherwise copies the connected
       // node z-index, so an edge can paint over an unrelated overlapping box.
       zIndex: 0,
@@ -349,7 +383,15 @@ function FlowMapInner({
       ),
     [merged, progress, lanes, search, filter, flagFilter, onSelect, onSetFlag, layoutMode, onRename, renameNonces],
   );
-  const initialEdges = useMemo(() => toFlowEdges(merged, layoutMode), [merged, layoutMode]);
+  const initialEdges = useMemo(
+    () =>
+      toFlowEdges(
+        merged,
+        layoutMode,
+        dimmedNodeIds(merged, progress, lanes, search, filter, flagFilter),
+      ),
+    [merged, layoutMode, progress, lanes, search, filter, flagFilter],
+  );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -395,8 +437,10 @@ function FlowMapInner({
   ]);
 
   useEffect(() => {
-    setEdges(toFlowEdges(merged, layoutMode));
-  }, [merged, layoutMode, setEdges]);
+    setEdges(
+      toFlowEdges(merged, layoutMode, dimmedNodeIds(merged, progress, lanes, search, filter, flagFilter)),
+    );
+  }, [merged, layoutMode, progress, lanes, search, filter, flagFilter, setEdges]);
 
   useEffect(() => {
     if (!registerAddAtCenter) return;

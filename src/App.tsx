@@ -77,6 +77,8 @@ export default function App() {
   const [idbPending, setIdbPending] = useState(false);
   const [booting, setBooting] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
 
   const idbTimer = useRef<number | null>(null);
   const chartTimer = useRef<number | null>(null);
@@ -592,7 +594,6 @@ export default function App() {
             onSave={onSave}
             onExportJson={onExportJson}
             onExportPng={onExportPng}
-            onOpenSearch={() => setSearchOpen(true)}
             onRenameTitle={onRenameTitle}
             onDeleteMap={onDeleteMap}
           />
@@ -606,7 +607,8 @@ export default function App() {
           />
           <SearchPopover
             open={searchOpen}
-            onClose={() => setSearchOpen(false)}
+            onOpen={openSearch}
+            onClose={closeSearch}
             search={search}
             filter={filter}
             flagFilter={flagFilter}
@@ -640,6 +642,7 @@ export default function App() {
               }}
             />
           </main>
+          <SaveToast message={toast} onClear={() => setToast(null)} />
         </div>
         <TopicPanel
           topic={selected}
@@ -652,7 +655,6 @@ export default function App() {
           onFlag={onSetFlag}
         />
       </div>
-      <SaveToast message={toast} onClear={() => setToast(null)} />
     </>
   );
 }

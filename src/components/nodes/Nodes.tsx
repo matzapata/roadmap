@@ -403,7 +403,7 @@ export function VerticalNode({ data, selected }: NodeProps) {
   const dash = style.strokeDasharray ? String(style.strokeDasharray) : undefined;
   const show = !!d.layoutMode && !!selected;
   return (
-    <div className={`rf-line-node ${selected ? "selected" : ""}`} style={{ width: "100%", height: "100%" }}>
+    <div className={`rf-line-node ${selected ? "selected" : ""} ${d.dimmed ? "dimmed" : ""}`} style={{ width: "100%", height: "100%" }}>
       {show ? (
         <>
           <NodeResizeControl
@@ -451,7 +451,7 @@ export function HorizontalNode({ data, selected }: NodeProps) {
   const dash = style.strokeDasharray ? String(style.strokeDasharray) : undefined;
   const show = !!d.layoutMode && !!selected;
   return (
-    <div className={`rf-line-node ${selected ? "selected" : ""}`} style={{ width: "100%", height: "100%" }}>
+    <div className={`rf-line-node ${selected ? "selected" : ""} ${d.dimmed ? "dimmed" : ""}`} style={{ width: "100%", height: "100%" }}>
       {show ? (
         <>
           <NodeResizeControl
