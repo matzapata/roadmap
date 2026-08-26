@@ -983,6 +983,10 @@ code {
 }
 
 .react-flow__node-section {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   overflow: visible !important;
 }
 

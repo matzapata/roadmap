@@ -192,7 +192,9 @@ function toFlowNodes(
           ? { background: "transparent", border: "none", padding: 0 }
           : {}),
       },
-      zIndex: n.type === "group" ? -1 : n.type === "section" ? -1 : n.type === "vertical" || n.type === "horizontal" ? 0 : 1,
+      // Boxes (including section/group) sit above wires so fills cover
+      // edges that pass through. Line nodes stay with the edges.
+      zIndex: n.type === "vertical" || n.type === "horizontal" ? 0 : 1,
     } as Node;
   });
 }
