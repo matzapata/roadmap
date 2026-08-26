@@ -313,6 +313,22 @@ export type AddNodeKind = "topic" | "subtopic" | "label" | "label-bordered";
 export type AlignMode = "left" | "center" | "right" | "top" | "middle" | "bottom";
 export type DistributeMode = "horizontal" | "vertical";
 
+export type CanvasEditApi = {
+  deleteSelected: () => void;
+  align: (mode: AlignMode) => void;
+  distribute: (mode: DistributeMode) => void;
+  equalize: (mode: "width" | "height") => void;
+  group: () => void;
+  ungroup: () => void;
+};
+
+export type SelectionMeta = {
+  selectedCount: number;
+  alignCount: number;
+  groupCount: number;
+  canUngroup: boolean;
+};
+
 type Props = {
   merged: MergedFlow;
   lanes: Lane[];
@@ -335,6 +351,8 @@ type Props = {
   onUndo: () => void;
   onRedo: () => void;
   registerAddAtCenter?: (fn: ((kind: AddNodeKind) => void) | null) => void;
+  registerEditApi?: (api: CanvasEditApi | null) => void;
+  onSelectionMeta?: (meta: SelectionMeta) => void;
 };
 
 function FlowMapInner({
@@ -359,6 +377,8 @@ function FlowMapInner({
   onUndo,
   onRedo,
   registerAddAtCenter,
+  registerEditApi,
+  onSelectionMeta,
 }: Props) {
   const { screenToFlowPosition } = useReactFlow();
   const [renameNonces, setRenameNonces] = useState<Record<string, number>>({});
@@ -842,6 +862,40 @@ function FlowMapInner({
   }, []);
 
   useEffect(() => {
+    if (!registerEditApi) return;
+    registerEditApi({
+      deleteSelected,
+      align: alignSelected,
+      distribute: distributeSelected,
+      equalize: equalizeSelected,
+      group: groupSelected,
+      ungroup: ungroupSelected,
+    });
+    return () => registerEditApi(null);
+  }, [
+    registerEditApi,
+    deleteSelected,
+    alignSelected,
+    distributeSelected,
+    equalizeSelected,
+    groupSelected,
+    ungroupSelected,
+  ]);
+
+  useEffect(() => {
+    if (!onSelectionMeta) return;
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedEdges = edges.filter((e) => e.selected);
+    const parentIds = new Set(nodes.map((n) => n.parentId).filter(Boolean) as string[]);
+    onSelectionMeta({
+      selectedCount: selectedNodes.length + selectedEdges.length,
+      alignCount: selectedNodes.filter((n) => n.type !== "group").length,
+      groupCount: selectedNodes.filter((n) => n.type !== "group" && n.type !== "section" && !n.parentId).length,
+      canUngroup: selectedNodes.some((n) => n.type === "group" || !!n.parentId || parentIds.has(n.id)),
+    });
+  }, [nodes, edges, onSelectionMeta]);
+
+  useEffect(() => {
     if (!layoutMode) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -851,6 +905,12 @@ function FlowMapInner({
       if (e.key === "Backspace" || e.key === "Delete") {
         e.preventDefault();
         deleteSelected();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        if (e.shiftKey) ungroupSelected();
+        else groupSelected();
         return;
       }
       const arrows: Record<string, { dx: number; dy: number }> = {
@@ -876,7 +936,7 @@ function FlowMapInner({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [layoutMode, deleteSelected, applyPositions]);
+  }, [layoutMode, deleteSelected, applyPositions, groupSelected, ungroupSelected]);
 
   const openContextMenu = useCallback(
     (clientX: number, clientY: number) => {

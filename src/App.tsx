@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppMenu } from "./components/AppMenu";
 import { ModeToolbar, type CanvasTool } from "./components/ModeToolbar";
+import { CanvasActionBar } from "./components/CanvasActionBar";
 import { TopicPanel } from "./components/TopicPanel";
-import { SaveToast } from "./components/SaveToast";
 import { SearchPopover } from "./components/SearchPopover";
-import { FlowMap, makeAddedNode, type AddNodeKind } from "./components/FlowMap";
+import { FlowMap, makeAddedNode, type AddNodeKind, type CanvasEditApi, type SelectionMeta } from "./components/FlowMap";
 import {
   bundleWithChart,
   collectTopicIds,
@@ -72,7 +72,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [flagFilter, setFlagFilter] = useState<FlagFilter>("");
-  const [toast, setToast] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [idbPending, setIdbPending] = useState(false);
   const [booting, setBooting] = useState(true);
@@ -88,6 +87,13 @@ export default function App() {
   bundleRef.current = bundle;
   const flowRootRef = useRef<HTMLDivElement | null>(null);
   const addAtCenter = useRef<((kind: AddNodeKind) => void) | null>(null);
+  const editApiRef = useRef<CanvasEditApi | null>(null);
+  const [selectionMeta, setSelectionMeta] = useState<SelectionMeta>({
+    selectedCount: 0,
+    alignCount: 0,
+    groupCount: 0,
+    canUngroup: false,
+  });
   const historyRef = useRef<ChartSnapshot[]>([]);
   const redoRef = useRef<ChartSnapshot[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -95,8 +101,6 @@ export default function App() {
   const skipHistoryRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastExportedRef = useRef<string>("");
-
-  const showToast = useCallback((msg: string) => setToast(msg), []);
 
   const refreshMapList = useCallback(async () => {
     const idbMaps = await idbListBundles();
@@ -118,15 +122,13 @@ export default function App() {
     idbTimer.current = window.setTimeout(async () => {
       try {
         await idbPutBundle(next);
-        showToast("Saved locally");
         setIdbPending(false);
         void refreshMapList();
       } catch {
-        showToast("Local save failed");
         setIdbPending(false);
       }
     }, 1200);
-  }, [showToast, refreshMapList]);
+  }, [refreshMapList]);
 
   const applyBundle = useCallback(
     (next: RoadmapBundle, opts?: { markClean?: boolean }) => {
@@ -312,11 +314,25 @@ export default function App() {
     skipHistoryRef.current = false;
   }, [scheduleSaveChart]);
 
+  const registerEditApi = useCallback((api: CanvasEditApi | null) => {
+    editApiRef.current = api;
+  }, []);
+
+  const onSelectionMeta = useCallback((meta: SelectionMeta) => {
+    setSelectionMeta((prev) =>
+      prev.selectedCount === meta.selectedCount &&
+      prev.alignCount === meta.alignCount &&
+      prev.groupCount === meta.groupCount &&
+      prev.canUngroup === meta.canUngroup
+        ? prev
+        : meta,
+    );
+  }, []);
+
   useEffect(() => {
-    if (!layoutMode) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key.toLowerCase() === "z") {
         e.preventDefault();
@@ -331,7 +347,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [layoutMode, onUndo, onRedo]);
+  }, [onUndo, onRedo]);
 
   const onRename = useCallback(
     (nodeId: string, label: string) => {
@@ -347,10 +363,9 @@ export default function App() {
       if (bound && b) {
         const next = renameTopicInBundle(b, bound.id, label);
         applyBundle(next);
-        showToast("Title updated");
       }
     },
-    [onChartChange, flow, applyBundle, showToast],
+    [onChartChange, flow, applyBundle],
   );
 
   const onRequestAdd = useCallback(
@@ -363,7 +378,6 @@ export default function App() {
         applyBundle(withTopic);
         const node = makeAddedNode(kind, `edit-${topicId}`, title, position, topicId);
         onChartChange((prev) => ({ ...prev, nodes: [...prev.nodes, node] }));
-        showToast("Topic created");
         return;
       }
 
@@ -373,7 +387,7 @@ export default function App() {
       const node = makeAddedNode(kind, id, label, position);
       onChartChange((prev) => ({ ...prev, nodes: [...prev.nodes, node] }));
     },
-    [onChartChange, applyBundle, showToast],
+    [onChartChange, applyBundle],
   );
 
   const onDeleteTopics = useCallback(
@@ -385,9 +399,8 @@ export default function App() {
       let next = b;
       for (const id of topicIds) next = deleteTopicFromBundle(next, id);
       applyBundle(next);
-      showToast("Topic deleted");
     },
-    [applyBundle, showToast],
+    [applyBundle],
   );
 
   const onAdd = useCallback(
@@ -440,8 +453,7 @@ export default function App() {
       applyBundle(next);
     }
     setLayoutMode(false);
-    showToast("Layout changes cancelled");
-  }, [chartBaseline, lanesBaseline, applyBundle, showToast]);
+  }, [chartBaseline, lanesBaseline, applyBundle]);
 
   const canCancelLayout =
     layoutMode &&
@@ -483,11 +495,11 @@ export default function App() {
 
   const onMapChange = (nextId: string) => {
     if (nextId === mapId) return;
-    void loadMap(nextId).catch((e) => showToast(`Open failed: ${e}`));
+    void loadMap(nextId).catch(() => {});
   };
 
   const onNew = () => {
-    void startBlank().then(() => showToast("New roadmap"));
+    void startBlank();
   };
 
   const onDeleteMap = (id: string) => {
@@ -501,13 +513,12 @@ export default function App() {
       try {
         await idbDeleteBundle(id);
         const list = await refreshMapList();
-        showToast("Roadmap deleted");
         if (!deletingCurrent) return;
         const next = list.find((m) => m.id !== id);
         if (next) await loadMap(next.id);
         else await startBlank({ persist: false });
-      } catch (err) {
-        showToast(`Delete failed: ${err}`);
+      } catch {
+        /* ignore */
       }
     })();
   };
@@ -526,9 +537,8 @@ export default function App() {
       applyBundle(parsed, { markClean: true });
       setMapId(parsed.id);
       setMapIdInUrl(parsed.id);
-      showToast(`Opened ${file.name}`);
-    } catch (err) {
-      showToast(`Open failed: ${err}`);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -538,14 +548,12 @@ export default function App() {
     downloadBundle(b, { includeProgress: true });
     lastExportedRef.current = JSON.stringify(b);
     setDirty(false);
-    showToast("Downloaded JSON");
   };
 
   const onExportJson = () => {
     const b = bundleRef.current;
     if (!b) return;
     downloadBundle(b, { includeProgress: false });
-    showToast("Exported JSON (no progress)");
   };
 
   const onExportPng = async () => {
@@ -561,9 +569,8 @@ export default function App() {
           .replace(/\s+/g, "-")
           .replace(/^-+|-+$/g, "") || b.id;
       await exportChartPng(root, `${slug}.png`);
-      showToast("Exported PNG");
-    } catch (err) {
-      showToast(`PNG export failed: ${err}`);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -634,19 +641,33 @@ export default function App() {
             onExportPng={onExportPng}
             onRenameTitle={onRenameTitle}
             onDeleteMap={onDeleteMap}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onUndo={onUndo}
-            onRedo={onRedo}
           />
-          <ModeToolbar
-            layoutMode={layoutMode}
-            canvasTool={canvasTool}
-            onCanvasTool={setCanvasTool}
-            onEnterEdit={enterLayoutMode}
-            onExitEdit={exitLayoutMode}
-            onAdd={onAdd}
-          />
+          <div className="canvas-toolbars">
+            {layoutMode ? (
+              <CanvasActionBar
+                layoutMode={layoutMode}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                selection={selectionMeta}
+                onUndo={onUndo}
+                onRedo={onRedo}
+                onDelete={() => editApiRef.current?.deleteSelected()}
+                onAlign={(mode) => editApiRef.current?.align(mode)}
+                onDistribute={(mode) => editApiRef.current?.distribute(mode)}
+                onEqualize={(mode) => editApiRef.current?.equalize(mode)}
+                onGroup={() => editApiRef.current?.group()}
+                onUngroup={() => editApiRef.current?.ungroup()}
+              />
+            ) : null}
+            <ModeToolbar
+              layoutMode={layoutMode}
+              canvasTool={canvasTool}
+              onCanvasTool={setCanvasTool}
+              onEnterEdit={enterLayoutMode}
+              onExitEdit={exitLayoutMode}
+              onAdd={onAdd}
+            />
+          </div>
           <SearchPopover
             open={searchOpen}
             onOpen={openSearch}
@@ -684,9 +705,10 @@ export default function App() {
               registerAddAtCenter={(fn) => {
                 addAtCenter.current = fn;
               }}
+              registerEditApi={registerEditApi}
+              onSelectionMeta={onSelectionMeta}
             />
           </main>
-          <SaveToast message={toast} onClear={() => setToast(null)} />
         </div>
         <TopicPanel
           topic={selected}

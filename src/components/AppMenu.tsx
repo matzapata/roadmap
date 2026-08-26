@@ -15,10 +15,6 @@ type Props = {
   onExportPng: () => void;
   onRenameTitle: (title: string) => void;
   onDeleteMap: (id: string) => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
 };
 
 export function AppMenu({
@@ -35,10 +31,6 @@ export function AppMenu({
   onExportPng,
   onRenameTitle,
   onDeleteMap,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -189,15 +181,6 @@ export function AppMenu({
                 </button>
                 <button type="button" className="menu-item danger" onClick={() => setConfirmDelete(true)}>
                   Delete
-                </button>
-                <hr className="menu-sep" />
-                <button type="button" className="menu-item" disabled={!canUndo} onClick={() => act(onUndo)}>
-                  Undo
-                  <kbd>⌘Z</kbd>
-                </button>
-                <button type="button" className="menu-item" disabled={!canRedo} onClick={() => act(onRedo)}>
-                  Redo
-                  <kbd>⇧⌘Z</kbd>
                 </button>
                 <hr className="menu-sep" />
                 {maps.length === 0 ? (
