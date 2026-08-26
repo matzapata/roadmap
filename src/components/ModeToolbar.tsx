@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { AddNodeKind } from "./FlowMap";
 
 export type CanvasTool = "select" | "pan";
@@ -52,17 +53,11 @@ function IconSubtopic() {
   );
 }
 
-function IconLabel() {
+function IconLabel({ bordered }: { bordered?: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18V6h5.2a3.3 3.3 0 0 1 0 6.6H6M11 12.6 15.5 18"
-      />
-    </svg>
+    <span className={`mode-icon-aa${bordered ? " bordered" : ""}`} aria-hidden="true">
+      Aa
+    </span>
   );
 }
 
@@ -103,6 +98,17 @@ export function ModeToolbar({
   onExitEdit,
   onAdd,
 }: Props) {
+  const [nextLabelBordered, setNextLabelBordered] = useState(false);
+
+  useEffect(() => {
+    if (!layoutMode) setNextLabelBordered(false);
+  }, [layoutMode]);
+
+  const add = (kind: AddNodeKind) => {
+    if (kind !== "label" && kind !== "label-bordered") setNextLabelBordered(false);
+    onAdd(kind);
+  };
+
   return (
     <div className="mode-toolbar" role="toolbar" aria-label="Canvas mode">
       <button
@@ -134,7 +140,7 @@ export function ModeToolbar({
             className="mode-icon-btn"
             aria-label="Add topic"
             data-tooltip="Add topic"
-            onClick={() => onAdd("topic")}
+            onClick={() => add("topic")}
           >
             <IconTopic />
           </button>
@@ -143,18 +149,22 @@ export function ModeToolbar({
             className="mode-icon-btn"
             aria-label="Add subtopic"
             data-tooltip="Add subtopic"
-            onClick={() => onAdd("subtopic")}
+            onClick={() => add("subtopic")}
           >
             <IconSubtopic />
           </button>
+          <span className="mode-toolbar-sep" aria-hidden="true" />
           <button
             type="button"
-            className="mode-icon-btn"
-            aria-label="Add label"
-            data-tooltip="Add label"
-            onClick={() => onAdd("label")}
+            className={`mode-icon-btn${nextLabelBordered ? " active" : ""}`}
+            aria-label={nextLabelBordered ? "Add bordered label" : "Add label"}
+            data-tooltip={nextLabelBordered ? "Add bordered label" : "Add label"}
+            onClick={() => {
+              add(nextLabelBordered ? "label-bordered" : "label");
+              setNextLabelBordered((v) => !v);
+            }}
           >
-            <IconLabel />
+            <IconLabel bordered={nextLabelBordered} />
           </button>
         </>
       ) : null}

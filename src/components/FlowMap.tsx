@@ -309,7 +309,7 @@ function connectionToEdge(
   };
 }
 
-export type AddNodeKind = "topic" | "subtopic" | "label";
+export type AddNodeKind = "topic" | "subtopic" | "label" | "label-bordered";
 export type AlignMode = "left" | "center" | "right" | "top" | "middle" | "bottom";
 export type DistributeMode = "horizontal" | "vertical";
 
@@ -325,6 +325,7 @@ type Props = {
   flowRootRef?: RefObject<HTMLDivElement | null>;
   chart: ChartSnapshot;
   canUndo: boolean;
+  canRedo: boolean;
   onSelect: (topic: BoundTopic) => void;
   onSetFlag: (topicId: string, flag: FlagColor | null) => void;
   onChartChange: (chart: ChartSnapshot | ((prev: ChartSnapshot) => ChartSnapshot)) => void;
@@ -332,6 +333,7 @@ type Props = {
   onRequestAdd: (kind: AddNodeKind, position: { x: number; y: number }) => void;
   onDeleteTopics: (topicIds: string[]) => void;
   onUndo: () => void;
+  onRedo: () => void;
   registerAddAtCenter?: (fn: ((kind: AddNodeKind) => void) | null) => void;
 };
 
@@ -347,6 +349,7 @@ function FlowMapInner({
   flowRootRef,
   chart,
   canUndo,
+  canRedo,
   onSelect,
   onSetFlag,
   onChartChange,
@@ -354,6 +357,7 @@ function FlowMapInner({
   onRequestAdd,
   onDeleteTopics,
   onUndo,
+  onRedo,
   registerAddAtCenter,
 }: Props) {
   const { screenToFlowPosition } = useReactFlow();
@@ -454,7 +458,8 @@ function FlowMapInner({
       const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
       const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
       const pos = screenToFlowPosition({ x: cx, y: cy });
-      onRequestAdd(kind, { x: pos.x - 100, y: pos.y - 24 });
+      const size = addedNodeSize(kind);
+      onRequestAdd(kind, { x: pos.x - size.width / 2, y: pos.y - size.height / 2 });
     });
     return () => registerAddAtCenter(null);
   }, [layoutMode, registerAddAtCenter, screenToFlowPosition, onRequestAdd]);
@@ -979,7 +984,9 @@ function FlowMapInner({
           onDelete={deleteSelected}
           onRename={renameSelected}
           onUndo={onUndo}
+          onRedo={onRedo}
           canUndo={canUndo}
+          canRedo={canRedo}
         />
       ) : null}
       {viewCtx && !layoutMode ? (
@@ -1033,6 +1040,17 @@ export function FlowMap(props: Props) {
   );
 }
 
+export function addedNodeSize(kind: AddNodeKind): { width: number; height: number } {
+  switch (kind) {
+    case "label":
+      return { width: 160, height: 28 };
+    case "label-bordered":
+      return { width: 160, height: 36 };
+    default:
+      return { width: 200, height: 49 };
+  }
+}
+
 export function makeAddedNode(
   kind: AddNodeKind,
   id: string,
@@ -1040,19 +1058,18 @@ export function makeAddedNode(
   position: { x: number; y: number },
   topicId?: string,
 ): ChartNode {
-  const type = kind === "label" ? "label" : kind;
-  const width = kind === "label" ? 160 : 200;
-  const height = kind === "label" ? 28 : 49;
-  return {
-    id,
-    type,
-    position,
-    width,
-    height,
-    data: {
+  const { width, height } = addedNodeSize(kind);
+  const type = kind === "label-bordered" ? "label" : kind;
+  let data: ChartNode["data"];
+  if (kind === "label") {
+    data = { label, style: { color: "#000000", fontSize: 17 } };
+  } else if (kind === "label-bordered") {
+    data = {
       label,
-      ...(topicId ? { topicId } : {}),
-      ...(kind === "label" ? { style: { color: "#000000", fontSize: 17 } } : {}),
-    },
-  };
+      style: { color: "#000000", fontSize: 17, borderColor: "#000000", backgroundColor: "#ffffff" },
+    };
+  } else {
+    data = { label, ...(topicId ? { topicId } : {}) };
+  }
+  return { id, type, position, width, height, data };
 }

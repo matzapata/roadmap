@@ -59,17 +59,20 @@ function BoxResizer({
   layoutMode,
   minWidth = 64,
   minHeight = 32,
+  keepAspectRatio,
 }: {
   selected?: boolean;
   layoutMode?: boolean;
   minWidth?: number;
   minHeight?: number;
+  keepAspectRatio?: boolean;
 }) {
   return (
     <NodeResizer
       isVisible={!!layoutMode && !!selected}
       minWidth={minWidth}
       minHeight={minHeight}
+      keepAspectRatio={keepAspectRatio}
       color="#4136d6"
       handleClassName="rf-resize-handle"
       lineClassName="rf-resize-line"
@@ -268,15 +271,24 @@ export function LabelNode({ id, data, selected }: NodeProps) {
   const d = data as TopicData;
   const color = (d.style?.color as string) || "#000000";
   const fontSize = (d.style?.fontSize as number) || 17;
+  const border = (d.style?.borderColor as string) || "";
+  const bg = (d.style?.backgroundColor as string) || "";
+  const bordered = !!border && border.toLowerCase() !== "transparent";
   return (
     <div
-      className={`rf-step-label ${d.dimmed ? "dimmed" : ""} ${selected ? "selected" : ""}`}
+      className={`rf-step-label ${bordered ? "bordered" : ""} ${d.dimmed ? "dimmed" : ""} ${selected ? "selected" : ""}`}
       style={{
         color,
         fontSize,
         width: "100%",
         height: "100%",
         textAlign: (d.style?.textAlign as CSSProperties["textAlign"]) || "center",
+        ...(bordered
+          ? {
+              borderColor: d.dimmed ? "#bdbdbd" : border,
+              background: d.dimmed ? "#ececec" : bg || "#fff",
+            }
+          : {}),
       }}
     >
       <BoxResizer selected={selected} layoutMode={d.layoutMode} minWidth={40} minHeight={20} />

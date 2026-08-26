@@ -15,6 +15,10 @@ type Props = {
   onExportPng: () => void;
   onRenameTitle: (title: string) => void;
   onDeleteMap: (id: string) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 };
 
 export function AppMenu({
@@ -31,6 +35,10 @@ export function AppMenu({
   onExportPng,
   onRenameTitle,
   onDeleteMap,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -161,7 +169,6 @@ export function AppMenu({
               </div>
             ) : (
               <>
-                <p className="menu-section">File</p>
                 <button type="button" className="menu-item" onClick={() => act(onNew)}>
                   New
                 </button>
@@ -180,7 +187,16 @@ export function AppMenu({
                 <button type="button" className="menu-item danger" onClick={() => setConfirmDelete(true)}>
                   Delete
                 </button>
-                <p className="menu-section">Roadmaps</p>
+                <hr className="menu-sep" />
+                <button type="button" className="menu-item" disabled={!canUndo} onClick={() => act(onUndo)}>
+                  Undo
+                  <kbd>⌘Z</kbd>
+                </button>
+                <button type="button" className="menu-item" disabled={!canRedo} onClick={() => act(onRedo)}>
+                  Redo
+                  <kbd>⇧⌘Z</kbd>
+                </button>
+                <hr className="menu-sep" />
                 {maps.length === 0 ? (
                   <p className="menu-empty">No saved roadmaps</p>
                 ) : (

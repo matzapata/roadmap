@@ -200,6 +200,21 @@ code {
   position: relative;
 }
 
+.mode-icon-aa {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  user-select: none;
+}
+
+.mode-icon-aa.bordered {
+  font-size: 11px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  padding: 2px 3px;
+}
+
 .mode-icon-btn:hover {
   background: var(--accent-soft);
 }
@@ -263,17 +278,17 @@ code {
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.08);
 }
 
-.menu-section {
-  margin: 8px 12px 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.menu-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 6px 12px;
 }
 
 .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
   text-align: left;
   appearance: none;
@@ -297,6 +312,12 @@ code {
 .menu-item:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.menu-item kbd {
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .menu-item.danger {
@@ -971,6 +992,50 @@ code {
   color: #b00020;
 }
 
+.ctx-submenu-wrap {
+  position: relative;
+}
+
+.ctx-submenu-wrap > .ctx-submenu-trigger {
+  width: 100%;
+}
+
+.ctx-chevron {
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.ctx-submenu {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: -6px;
+  z-index: 91;
+  min-width: 140px;
+  background: #fff;
+  border: 2px solid #0d0d0d;
+  border-radius: var(--radius);
+  padding: 6px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.12);
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ctx-submenu::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  width: 10px;
+}
+
+.ctx-submenu-wrap:not(.disabled):hover > .ctx-submenu,
+.ctx-submenu-wrap:not(.disabled):focus-within > .ctx-submenu {
+  display: flex;
+}
+
 .ctx-menu kbd {
   font: inherit;
   font-size: 0.75rem;
@@ -1029,13 +1094,36 @@ code {
   outline-offset: 2px;
 }
 
+.react-flow__node-label {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
 .rf-step-label {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
   color: #000;
   text-align: center;
   white-space: nowrap;
+  line-height: 1.2;
   pointer-events: none;
+}
+
+.rf-step-label.bordered {
+  border: 2px solid #000;
+  border-radius: 5px;
+  background: #fff;
+  box-sizing: border-box;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .flow-root.layout-mode .rf-step-label {

@@ -89,7 +89,9 @@ export default function App() {
   const flowRootRef = useRef<HTMLDivElement | null>(null);
   const addAtCenter = useRef<((kind: AddNodeKind) => void) | null>(null);
   const historyRef = useRef<ChartSnapshot[]>([]);
+  const redoRef = useRef<ChartSnapshot[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const skipHistoryRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastExportedRef = useRef<string>("");
@@ -136,7 +138,9 @@ export default function App() {
       setChartBaseline(cloneChart(c));
       setLanesBaseline(structuredClone(next.lanes));
       historyRef.current = [];
+      redoRef.current = [];
       setCanUndo(false);
+      setCanRedo(false);
       document.title = next.title || "Roadmap";
       if (opts?.markClean) {
         setDirty(false);
@@ -248,9 +252,11 @@ export default function App() {
       const b = bundleRef.current;
       if (!b) return;
       const next = bundleWithChart(b, nextChart.nodes, nextChart.edges);
-      applyBundle(next);
+      bundleRef.current = next;
+      setBundle(next);
+      scheduleIdbSave(next);
     },
-    [applyBundle],
+    [scheduleIdbSave],
   );
 
   const scheduleSaveChart = useCallback(
@@ -269,7 +275,9 @@ export default function App() {
       if (!skipHistoryRef.current && !chartsEqual(resolved, chartRef.current)) {
         historyRef.current.push(cloneChart(chartRef.current));
         if (historyRef.current.length > 50) historyRef.current.shift();
+        redoRef.current = [];
         setCanUndo(true);
+        setCanRedo(false);
       }
       chartRef.current = resolved;
       setChart(resolved);
@@ -280,12 +288,27 @@ export default function App() {
 
   const onUndo = useCallback(() => {
     const prev = historyRef.current.pop();
-    setCanUndo(historyRef.current.length > 0);
     if (!prev) return;
+    redoRef.current.push(cloneChart(chartRef.current));
+    setCanUndo(historyRef.current.length > 0);
+    setCanRedo(true);
     skipHistoryRef.current = true;
     chartRef.current = prev;
     setChart(prev);
     scheduleSaveChart(prev);
+    skipHistoryRef.current = false;
+  }, [scheduleSaveChart]);
+
+  const onRedo = useCallback(() => {
+    const next = redoRef.current.pop();
+    if (!next) return;
+    historyRef.current.push(cloneChart(chartRef.current));
+    setCanUndo(true);
+    setCanRedo(redoRef.current.length > 0);
+    skipHistoryRef.current = true;
+    chartRef.current = next;
+    setChart(next);
+    scheduleSaveChart(next);
     skipHistoryRef.current = false;
   }, [scheduleSaveChart]);
 
@@ -294,14 +317,21 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() === "z") {
         e.preventDefault();
-        onUndo();
+        if (e.shiftKey) onRedo();
+        else onUndo();
+        return;
+      }
+      if (e.key.toLowerCase() === "y" && !e.shiftKey) {
+        e.preventDefault();
+        onRedo();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [layoutMode, onUndo]);
+  }, [layoutMode, onUndo, onRedo]);
 
   const onRename = useCallback(
     (nodeId: string, label: string) => {
@@ -325,21 +355,23 @@ export default function App() {
 
   const onRequestAdd = useCallback(
     (kind: AddNodeKind, position: { x: number; y: number }) => {
-      if (kind === "label") {
-        const id = `edit-label-${Date.now().toString(36)}`;
-        const node = makeAddedNode("label", id, "New label", position);
+      if (kind === "topic" || kind === "subtopic") {
+        const title = kind === "topic" ? "New topic" : "New subtopic";
+        const b = bundleRef.current;
+        if (!b) return;
+        const { bundle: withTopic, topicId } = createTopicInBundle(b, title, kind);
+        applyBundle(withTopic);
+        const node = makeAddedNode(kind, `edit-${topicId}`, title, position, topicId);
         onChartChange((prev) => ({ ...prev, nodes: [...prev.nodes, node] }));
+        showToast("Topic created");
         return;
       }
 
-      const title = kind === "topic" ? "New topic" : "New subtopic";
-      const b = bundleRef.current;
-      if (!b) return;
-      const { bundle: withTopic, topicId } = createTopicInBundle(b, title, kind);
-      applyBundle(withTopic);
-      const node = makeAddedNode(kind, `edit-${topicId}`, title, position, topicId);
+      const idPrefix = kind === "label-bordered" ? "label" : kind;
+      const id = `edit-${idPrefix}-${Date.now().toString(36)}`;
+      const label = kind === "label" || kind === "label-bordered" ? "New label" : "";
+      const node = makeAddedNode(kind, id, label, position);
       onChartChange((prev) => ({ ...prev, nodes: [...prev.nodes, node] }));
-      showToast("Topic created");
     },
     [onChartChange, applyBundle, showToast],
   );
@@ -370,7 +402,9 @@ export default function App() {
     setChartBaseline(cloneChart(chartRef.current));
     setLanesBaseline(structuredClone(bundleRef.current?.lanes || []));
     historyRef.current = [];
+    redoRef.current = [];
     setCanUndo(false);
+    setCanRedo(false);
     setLayoutMode(true);
   }, []);
 
@@ -379,7 +413,9 @@ export default function App() {
     setChartBaseline(cloneChart(chartRef.current));
     setLanesBaseline(structuredClone(bundleRef.current?.lanes || []));
     historyRef.current = [];
+    redoRef.current = [];
     setCanUndo(false);
+    setCanRedo(false);
   }, []);
 
   const onCancelLayout = useCallback(() => {
@@ -389,7 +425,9 @@ export default function App() {
     chartRef.current = restoredChart;
     setChart(restoredChart);
     historyRef.current = [];
+    redoRef.current = [];
     setCanUndo(false);
+    setCanRedo(false);
     skipHistoryRef.current = false;
 
     const b = bundleRef.current;
@@ -596,6 +634,10 @@ export default function App() {
             onExportPng={onExportPng}
             onRenameTitle={onRenameTitle}
             onDeleteMap={onDeleteMap}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={onUndo}
+            onRedo={onRedo}
           />
           <ModeToolbar
             layoutMode={layoutMode}
@@ -629,6 +671,7 @@ export default function App() {
               canvasTool={canvasTool}
               chart={chart}
               canUndo={canUndo}
+              canRedo={canRedo}
               flowRootRef={flowRootRef}
               onSelect={setSelected}
               onSetFlag={onSetFlag}
@@ -637,6 +680,7 @@ export default function App() {
               onRequestAdd={onRequestAdd}
               onDeleteTopics={onDeleteTopics}
               onUndo={onUndo}
+              onRedo={onRedo}
               registerAddAtCenter={(fn) => {
                 addAtCenter.current = fn;
               }}
