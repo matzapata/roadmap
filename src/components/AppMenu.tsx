@@ -115,42 +115,45 @@ export function AppMenu({
       >
         ☰
       </button>
-      {editingTitle ? (
-        <input
-          ref={titleInputRef}
-          className="map-title-input"
-          value={draftTitle}
-          aria-label="Roadmap title"
-          autoFocus
-          onChange={(e) => setDraftTitle(e.target.value)}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onBlur={commitTitle}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              ignoreBlurUntil.current = 0;
-              commitTitle();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              cancelTitle();
-            }
-          }}
-        />
-      ) : (
-        <button
-          type="button"
-          className="map-title-pill"
-          title="Double-click to rename roadmap"
-          onDoubleClick={beginEditTitle}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {title}
-        </button>
-      )}
-      <span className="progress-pill" title="Progress">
-        {progressLabel}
-      </span>
+      <div className="map-meta-pill">
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            className="map-title-input"
+            value={draftTitle}
+            aria-label="Roadmap title"
+            autoFocus
+            onChange={(e) => setDraftTitle(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onBlur={commitTitle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                ignoreBlurUntil.current = 0;
+                commitTitle();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelTitle();
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="map-title-pill"
+            title="Double-click to rename roadmap"
+            onDoubleClick={beginEditTitle}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {title}
+          </button>
+        )}
+        <span className="map-meta-sep" aria-hidden="true" />
+        <span className="progress-pill" title="Progress">
+          {progressLabel}
+        </span>
+      </div>
       {open ? (
         <>
           <div className="menu-backdrop" onClick={close} />

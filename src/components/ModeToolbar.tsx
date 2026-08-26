@@ -17,7 +17,7 @@ function IconCursor() {
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path
         fill="currentColor"
-        d="M6 3.5v17l4.4-4.7 2.8 6.6 2.6-1.1-2.8-6.5H19L6 3.5Z"
+        d="M6.93 4.59v13.26l3.43-3.67 2.19 5.15 2.02-.86-2.18-5.07H17.07L6.93 4.59Z"
       />
     </svg>
   );

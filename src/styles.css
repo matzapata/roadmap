@@ -89,24 +89,45 @@ code {
   justify-content: center;
 }
 
+.map-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 2px solid #0d0d0d;
+  border-radius: var(--radius);
+  padding: 0 12px;
+  min-height: 34px;
+  max-width: min(520px, 72vw);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.map-meta-pill:has(.map-title-pill:hover),
+.map-meta-pill:focus-within {
+  border-color: var(--accent);
+}
+
+.map-meta-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 0;
+  background: #0d0d0d;
+  opacity: 0.18;
+  flex-shrink: 0;
+}
+
 .progress-pill {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--muted);
-  background: #fff;
-  border: 2px solid #0d0d0d;
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  max-width: 200px;
+  padding: 6px 0;
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.06);
   line-height: 1.25;
-  box-sizing: border-box;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
+  min-width: 0;
 }
 
 .map-title-pill {
@@ -115,27 +136,18 @@ code {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
-  background: #fff;
-  border: 2px solid #0d0d0d;
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  max-width: min(280px, 40vw);
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  max-width: min(240px, 36vw);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.06);
   line-height: 1.25;
-  box-sizing: border-box;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
   cursor: text;
   user-select: none;
   text-align: left;
-}
-
-.map-title-pill:hover {
-  border-color: var(--accent);
+  min-width: 0;
 }
 
 .map-title-input {
@@ -144,19 +156,13 @@ code {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
-  background: #fff;
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  width: min(320px, 50vw);
-  min-width: 180px;
-  min-height: 34px;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  width: min(240px, 36vw);
+  min-width: 72px;
   line-height: 1.25;
-  box-sizing: border-box;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.06);
   outline: none;
-  z-index: 101;
-  position: relative;
 }
 
 .mode-toolbar {
