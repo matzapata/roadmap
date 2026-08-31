@@ -626,7 +626,15 @@ export default function App() {
         onChange={onFileSelected}
       />
       <div className="app-shell">
-        <div className="canvas-wrap">
+        <div
+          className="canvas-wrap"
+          onPointerDown={(e) => {
+            if (!selected) return;
+            const target = e.target as HTMLElement | null;
+            if (target?.closest(".rf-topic, .rf-subtopic")) return;
+            setSelected(null);
+          }}
+        >
           <AppMenu
             title={bundle.title}
             progressLabel={progressLabel}
