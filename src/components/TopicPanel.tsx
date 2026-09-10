@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { marked } from "marked";
 import type { BoundTopic, Progress, Status } from "../lib/types";
 import { FlagSelect } from "./FlagSelect";
+import { StatusSelect } from "./StatusSelect";
 import type { FlagColor } from "../lib/flags";
 
 type Props = {
@@ -56,6 +57,18 @@ export function TopicPanel({
     el.setSelectionRange(el.value.length, el.value.length);
   }, [mode]);
 
+  useEffect(() => {
+    if (!topic) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (mode === "edit") return;
+      e.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [topic, mode, onClose]);
+
   const onMarkdownChange = (value: string) => {
     if (!topic) return;
     setMarkdown(value);
@@ -65,84 +78,76 @@ export function TopicPanel({
   if (!topic) return null;
 
   return (
-    <aside className="topic-panel" aria-label="Topic details">
-      <div className="topic-panel-header">
-        <h2>{topic.title}</h2>
-        <div className="topic-panel-header-actions">
-          <FlagSelect value={flag} onChange={(next) => onFlag(topic.id, next)} />
-          <button type="button" className="btn icon" aria-label="Close panel" onClick={onClose}>
-            ×
-          </button>
+    <aside className="topic-panel" aria-label={topic.title}>
+      <div className="topic-panel-body">
+        <div className="topic-panel-header">
+          <StatusSelect value={status} onChange={(next) => onStatus(topic.id, next)} />
+          <div className="topic-panel-header-actions">
+            <FlagSelect value={flag} onChange={(next) => onFlag(topic.id, next)} />
+            <button type="button" className="btn icon" aria-label="Close" onClick={onClose}>
+              ×
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="status-row" role="group" aria-label="Status">
-        {(["todo", "learning", "done"] as Status[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`status-btn ${status === s ? "active" : ""}`}
-            data-status={s}
-            onClick={() => onStatus(topic.id, s)}
+        {mode === "edit" ? (
+          <textarea
+            id="panel-markdown"
+            ref={markdownRef}
+            className="panel-markdown"
+            wrap="soft"
+            spellCheck={false}
+            value={markdown}
+            onChange={(e) => onMarkdownChange(e.target.value)}
+            onBlur={() => setMode("preview")}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                setMode("preview");
+              }
+            }}
+            placeholder="# Topic notes"
+            aria-label="Topic notes editor"
+          />
+        ) : (
+          <div
+            className="preview markdown-body panel-preview"
+            title="Double-click to edit"
+            role="article"
+            tabIndex={0}
+            onDoubleClick={() => setMode("edit")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                setMode("edit");
+              }
+            }}
           >
-            {s[0].toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </div>
-      {mode === "edit" ? (
-        <textarea
-          id="panel-markdown"
-          ref={markdownRef}
-          className="panel-markdown"
-          wrap="soft"
-          spellCheck={false}
-          value={markdown}
-          onChange={(e) => onMarkdownChange(e.target.value)}
-          onBlur={() => setMode("preview")}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              setMode("preview");
-            }
-          }}
-          placeholder="# Topic notes"
-          aria-label="Topic notes editor"
-        />
-      ) : (
-        <div
-          className="preview markdown-body panel-preview"
-          title="Double-click to edit"
-          role="article"
-          tabIndex={0}
-          onDoubleClick={() => setMode("edit")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              setMode("edit");
-            }
-          }}
-        >
-          {markdown.trim() ? (
-            <div
-              className="panel-preview-body"
-              dangerouslySetInnerHTML={{ __html: renderMd(markdown) }}
-            />
-          ) : (
-            <p className="panel-preview-placeholder">Double-click to edit</p>
-          )}
+            {markdown.trim() ? (
+              <div
+                className="panel-preview-body"
+                dangerouslySetInnerHTML={{ __html: renderMd(markdown) }}
+              />
+            ) : (
+              <p className="panel-preview-placeholder">Double-click to edit</p>
+            )}
+          </div>
+        )}
+        <div className="topic-panel-comments">
+          <label className="notes-label" htmlFor="panel-notes">
+            Comments
+          </label>
+          <textarea
+            id="panel-notes"
+            className="panel-notes"
+            rows={4}
+            wrap="soft"
+            placeholder="Add a comment…"
+            value={personalNotes}
+            onChange={(e) => onNotes(topic.id, e.target.value)}
+          />
         </div>
-      )}
-      <label className="notes-label" htmlFor="panel-notes">
-        Your notes
-      </label>
-      <textarea
-        id="panel-notes"
-        className="panel-notes"
-        rows={5}
-        wrap="soft"
-        placeholder="Notes, links, next steps…"
-        value={personalNotes}
-        onChange={(e) => onNotes(topic.id, e.target.value)}
-      />
+      </div>
     </aside>
   );
 }

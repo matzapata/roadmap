@@ -14,6 +14,8 @@ type Props = {
   onEqualize: (mode: "width" | "height") => void;
   onGroup: () => void;
   onUngroup: () => void;
+  onRename: () => void;
+  onEditContent: () => void;
 };
 
 function IconUndo() {
@@ -172,6 +174,23 @@ function IconUngroup() {
   );
 }
 
+function IconEditText() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 6h10M12 6v12M9 18h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconEditContent() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 9h6M9 12.5h6M9 16h3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 type MoreAction = {
   key: string;
   label: string;
@@ -194,6 +213,8 @@ export function CanvasActionBar({
   onEqualize,
   onGroup,
   onUngroup,
+  onRename,
+  onEditContent,
 }: Props) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -223,6 +244,8 @@ export function CanvasActionBar({
   }, [moreOpen]);
 
   const canDelete = layoutMode && selection.selectedCount > 0;
+  const canRename = layoutMode && selection.canRename;
+  const canEditContent = layoutMode && selection.canEditContent;
   const canAlign = layoutMode && selection.alignCount >= 2;
   const canDistribute = layoutMode && selection.alignCount >= 3;
   const canGroup = layoutMode && selection.groupCount >= 2;
@@ -275,6 +298,26 @@ export function CanvasActionBar({
         onClick={onRedo}
       >
         <IconRedo />
+      </button>
+      <button
+        type="button"
+        className="mode-icon-btn"
+        aria-label="Edit text"
+        data-tooltip="Edit text"
+        disabled={!canRename}
+        onClick={onRename}
+      >
+        <IconEditText />
+      </button>
+      <button
+        type="button"
+        className="mode-icon-btn"
+        aria-label="Edit content"
+        data-tooltip="Edit content"
+        disabled={!canEditContent}
+        onClick={onEditContent}
+      >
+        <IconEditContent />
       </button>
       <button
         type="button"

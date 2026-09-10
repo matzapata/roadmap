@@ -101,6 +101,20 @@ function isFiltering(search: string, filter: string, flagFilter: FlagFilter) {
   return !!(search.trim() || filter !== "all" || flagFilter);
 }
 
+function boundTopicFromNode(node: Node, binding: Map<string, BoundTopic>): BoundTopic | null {
+  const bound = binding.get(node.id);
+  if (bound) return bound;
+  const data = node.data as { topic?: BoundTopic | null; topicId?: string; label?: string };
+  if (data.topic?.id) return data.topic;
+  const tid = typeof data.topicId === "string" ? data.topicId.trim() : "";
+  if (!tid) return null;
+  return { id: tid, title: String(data.label || tid) };
+}
+
+function isTopicBox(type?: string | null) {
+  return type === "topic" || type === "subtopic";
+}
+
 function nodeDimmed(
   n: { type?: string | null; data?: { label?: unknown } },
   bound: BoundTopic | null,
@@ -192,9 +206,16 @@ function toFlowNodes(
           ? { background: "transparent", border: "none", padding: 0 }
           : {}),
       },
-      // Boxes (including section/group) sit above wires so fills cover
-      // edges that pass through. Line nodes stay with the edges.
-      zIndex: n.type === "vertical" || n.type === "horizontal" ? 0 : 1,
+      // Wires under boxes. Sections/groups under clickable topics so a
+      // backdrop that isn't a parent cannot swallow clicks.
+      zIndex:
+        n.type === "vertical" || n.type === "horizontal"
+          ? 0
+          : n.type === "group" || n.type === "section"
+            ? 1
+            : n.type === "topic" || n.type === "subtopic"
+              ? 3
+              : 2,
     } as Node;
   });
 }
@@ -322,6 +343,8 @@ export type CanvasEditApi = {
   equalize: (mode: "width" | "height") => void;
   group: () => void;
   ungroup: () => void;
+  rename: () => void;
+  openContent: () => void;
 };
 
 export type SelectionMeta = {
@@ -329,6 +352,8 @@ export type SelectionMeta = {
   alignCount: number;
   groupCount: number;
   canUngroup: boolean;
+  canRename: boolean;
+  canEditContent: boolean;
 };
 
 type Props = {
@@ -568,7 +593,7 @@ function FlowMapInner({
   const onNodeClick: NodeMouseHandler = useCallback(
     (_evt, node) => {
       if (layoutMode) return;
-      const topic = (node.data as { topic?: BoundTopic | null }).topic;
+      const topic = boundTopicFromNode(node, bindingRef.current);
       if (topic) onSelect(topic);
     },
     [layoutMode, onSelect],
@@ -863,6 +888,13 @@ function FlowMapInner({
     setRenameNonces((prev) => ({ ...prev, [n.id]: (prev[n.id] || 0) + 1 }));
   }, []);
 
+  const openSelectedContent = useCallback(() => {
+    const selected = nodesRef.current.filter((n) => n.selected && isTopicBox(n.type));
+    if (selected.length !== 1) return;
+    const topic = boundTopicFromNode(selected[0], bindingRef.current);
+    if (topic) onSelect(topic);
+  }, [onSelect]);
+
   useEffect(() => {
     if (!registerEditApi) return;
     registerEditApi({
@@ -872,6 +904,8 @@ function FlowMapInner({
       equalize: equalizeSelected,
       group: groupSelected,
       ungroup: ungroupSelected,
+      rename: renameSelected,
+      openContent: openSelectedContent,
     });
     return () => registerEditApi(null);
   }, [
@@ -882,6 +916,8 @@ function FlowMapInner({
     equalizeSelected,
     groupSelected,
     ungroupSelected,
+    renameSelected,
+    openSelectedContent,
   ]);
 
   useEffect(() => {
@@ -889,11 +925,15 @@ function FlowMapInner({
     const selectedNodes = nodes.filter((n) => n.selected);
     const selectedEdges = edges.filter((e) => e.selected);
     const parentIds = new Set(nodes.map((n) => n.parentId).filter(Boolean) as string[]);
+    const topicBoxes = selectedNodes.filter((n) => isTopicBox(n.type));
     onSelectionMeta({
       selectedCount: selectedNodes.length + selectedEdges.length,
       alignCount: selectedNodes.filter((n) => n.type !== "group").length,
       groupCount: selectedNodes.filter((n) => n.type !== "group" && n.type !== "section" && !n.parentId).length,
       canUngroup: selectedNodes.some((n) => n.type === "group" || !!n.parentId || parentIds.has(n.id)),
+      canRename: selectedNodes.some((n) => RENAMEABLE_TYPES.has(n.type || "")),
+      canEditContent:
+        topicBoxes.length === 1 && !!boundTopicFromNode(topicBoxes[0], bindingRef.current),
     });
   }, [nodes, edges, onSelectionMeta]);
 
@@ -951,12 +991,16 @@ function FlowMapInner({
         (n) => n.type === "group" || !!n.parentId || parentIds.has(n.id),
       );
       const canRename = selected.some((n) => RENAMEABLE_TYPES.has(n.type || ""));
+      const topicBoxes = selected.filter((n) => isTopicBox(n.type));
+      const canEditContent =
+        topicBoxes.length === 1 && !!boundTopicFromNode(topicBoxes[0], bindingRef.current);
       setCtx({
         x: clientX,
         y: clientY,
         selectedCount: selected.length || edgesRef.current.filter((e) => e.selected).length,
         canUngroup,
         canRename,
+        canEditContent,
       });
     },
     [layoutMode],
@@ -995,7 +1039,7 @@ function FlowMapInner({
             openContextMenu(e.clientX, e.clientY);
             return;
           }
-          const bound = bindingRef.current.get(node.id);
+          const bound = boundTopicFromNode(node, bindingRef.current);
           if (!bound) return;
           setViewCtx({
             x: e.clientX,
@@ -1045,6 +1089,7 @@ function FlowMapInner({
           onUngroup={ungroupSelected}
           onDelete={deleteSelected}
           onRename={renameSelected}
+          onEditContent={openSelectedContent}
           onUndo={onUndo}
           onRedo={onRedo}
           canUndo={canUndo}

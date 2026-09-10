@@ -125,37 +125,33 @@ function bindChartToOurs(nodes: ChartNode[], ourNodes: TopicNode[]): Map<string,
   const mapping = new Map<string, BoundTopic>();
   const usedOurs = new Set<string>();
 
-  // Prefer explicit topicId
+  const bind = (chartId: string, topicId: string, title: string) => {
+    mapping.set(chartId, { id: topicId, title });
+    usedOurs.add(topicId);
+  };
+
+  // Prefer explicit topicId. Bind even when the lane tree is missing that id
+  // (notes are keyed by topicId) and allow several boxes to share one topic.
   for (const n of nodes) {
     if (n.type !== "topic" && n.type !== "subtopic") continue;
-    const tid = typeof n.data?.topicId === "string" ? n.data.topicId : null;
+    const tid = typeof n.data?.topicId === "string" ? n.data.topicId.trim() : "";
     if (!tid) continue;
     const ours = byId.get(tid);
-    if (ours && !usedOurs.has(ours.id)) {
-      mapping.set(n.id, { id: ours.id, title: ours.title });
-      usedOurs.add(ours.id);
-    }
+    bind(n.id, tid, ours?.title || String(n.data?.label || tid));
   }
 
-  // edit-{topicId} convention
+  // edit-{topicId} / our- / extra- convention
   for (const n of nodes) {
     if (mapping.has(n.id)) continue;
     if (n.type !== "topic" && n.type !== "subtopic") continue;
-    if (n.id.startsWith("edit-")) {
-      const topicId = n.id.slice("edit-".length);
-      const ours = byId.get(topicId);
-      if (ours && !usedOurs.has(ours.id)) {
-        mapping.set(n.id, { id: ours.id, title: ours.title });
-        usedOurs.add(ours.id);
-      }
-    } else if (n.id.startsWith("our-") || n.id.startsWith("extra-")) {
-      const topicId = n.id.replace(/^(our|extra)-/, "");
-      const ours = byId.get(topicId);
-      if (ours && !usedOurs.has(ours.id)) {
-        mapping.set(n.id, { id: ours.id, title: ours.title });
-        usedOurs.add(ours.id);
-      }
+    let topicId: string | null = null;
+    if (n.id.startsWith("edit-")) topicId = n.id.slice("edit-".length);
+    else if (n.id.startsWith("our-") || n.id.startsWith("extra-")) {
+      topicId = n.id.replace(/^(our|extra)-/, "");
     }
+    if (!topicId) continue;
+    const ours = byId.get(topicId);
+    if (ours) bind(n.id, ours.id, ours.title);
   }
 
   // Title match for remaining

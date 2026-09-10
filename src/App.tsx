@@ -93,6 +93,8 @@ export default function App() {
     alignCount: 0,
     groupCount: 0,
     canUngroup: false,
+    canRename: false,
+    canEditContent: false,
   });
   const historyRef = useRef<ChartSnapshot[]>([]);
   const redoRef = useRef<ChartSnapshot[]>([]);
@@ -323,7 +325,9 @@ export default function App() {
       prev.selectedCount === meta.selectedCount &&
       prev.alignCount === meta.alignCount &&
       prev.groupCount === meta.groupCount &&
-      prev.canUngroup === meta.canUngroup
+      prev.canUngroup === meta.canUngroup &&
+      prev.canRename === meta.canRename &&
+      prev.canEditContent === meta.canEditContent
         ? prev
         : meta,
     );
@@ -626,15 +630,7 @@ export default function App() {
         onChange={onFileSelected}
       />
       <div className="app-shell">
-        <div
-          className="canvas-wrap"
-          onPointerDown={(e) => {
-            if (!selected) return;
-            const target = e.target as HTMLElement | null;
-            if (target?.closest(".rf-topic, .rf-subtopic")) return;
-            setSelected(null);
-          }}
-        >
+        <div className="canvas-wrap">
           <AppMenu
             title={bundle.title}
             progressLabel={progressLabel}
@@ -665,6 +661,8 @@ export default function App() {
                 onEqualize={(mode) => editApiRef.current?.equalize(mode)}
                 onGroup={() => editApiRef.current?.group()}
                 onUngroup={() => editApiRef.current?.ungroup()}
+                onRename={() => editApiRef.current?.rename()}
+                onEditContent={() => editApiRef.current?.openContent()}
               />
             ) : null}
             <ModeToolbar
@@ -717,6 +715,13 @@ export default function App() {
               onSelectionMeta={onSelectionMeta}
             />
           </main>
+          {selected ? (
+            <div
+              className="topic-panel-backdrop"
+              aria-hidden="true"
+              onMouseDown={() => setSelected(null)}
+            />
+          ) : null}
         </div>
         <TopicPanel
           topic={selected}

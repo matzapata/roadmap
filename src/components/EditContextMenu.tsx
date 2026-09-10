@@ -6,6 +6,7 @@ export type ContextMenuState = {
   selectedCount: number;
   canUngroup: boolean;
   canRename: boolean;
+  canEditContent: boolean;
 };
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
   onUngroup: () => void;
   onDelete: () => void;
   onRename: () => void;
+  onEditContent: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -34,6 +36,7 @@ export function EditContextMenu({
   onUngroup,
   onDelete,
   onRename,
+  onEditContent,
   onUndo,
   onRedo,
   canUndo,
@@ -64,6 +67,9 @@ export function EditContextMenu({
         <button type="button" role="menuitem" disabled={!menu.canRename} onClick={() => run(onRename)}>
           Edit text
           <kbd>Dbl-click</kbd>
+        </button>
+        <button type="button" role="menuitem" disabled={!menu.canEditContent} onClick={() => run(onEditContent)}>
+          Edit content
         </button>
         <hr />
         <div className={`ctx-submenu-wrap${menu.selectedCount < 2 ? " disabled" : ""}`} role="none">
